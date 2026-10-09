@@ -6,6 +6,14 @@
 
 课间以课程为中心，沿用 SleepDown 的 Miuix 组件、双入口玻璃底栏、日周视图、渐进切周、课程编辑、弹窗和切页动效。川职认证和同步接入原生界面及 Room，不再以 OpenWakeUp 作为界面基底。
 
+## 下载与验证
+
+- [1.0.0 原签名 APK](https://raw.githubusercontent.com/zwwd1/scvtc-kejian/main/dist/scvtc-campus-old-1.0.0.apk) · [SHA-256](dist/scvtc-campus-old-1.0.0.apk.sha256)
+- [完整源码](https://github.com/zwwd1/scvtc-kejian/archive/refs/heads/main.zip) · [验证记录](VERIFICATION.md) · [源码与 APK 对应关系](BUILD_PROVENANCE.json)
+- 最低 Android 13；覆盖安装请保留应用数据。仓库源码不含原签名私钥，自行使用其他私钥打包不能覆盖此 APK。
+
+[交互架构图](docs/architecture.html)：下载 HTML 后在浏览器打开，节点可跳转到固定源码提交。
+
 ## 使用入口
 
 | 需要什么 | 说明 |
@@ -35,7 +43,7 @@
 
 JDK 21、Android SDK Platform 37.0、Build Tools 37.0.0，使用项目 Gradle Wrapper。`third-party/miuix` 是带 SleepDown 补丁的 Miuix 0.9.3，`third-party/kyant-backdrop` 保留原版玻璃实现。版本、包名、签名和源码对应关系应随 APK 一起核对。
 
-当前正在完成重构后的发布构建与设备验收；文档描述实现流程，尚未完成的验收不写作通过。临时脚本、构建缓存、私人配置与诊断材料留在仓库外。
+已完成本地发布构建、原签名与对齐检查；在 Android 13 真机上验证了保留数据覆盖升级、真实课表读取和应用重启后免输入同步。学校 Session 过期恢复、Android 17 等未完成项目详见 [验证记录](VERIFICATION.md)。临时脚本、构建缓存、私人配置与诊断材料留在仓库外。
 
 ## 致谢项目与许可
 
