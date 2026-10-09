@@ -1,11 +1,47 @@
 # 川职·课间
 
-四川职业技术学院非官方适配项目，维护：zwwd1。
+四川职业技术学院非官方课表应用，维护：**zwwd1**。本项目 `1.0.0` 为第一版。
 
-日周课表、课程编辑、本地导入导出、提醒与小部件。首次登录后使用 Android Keystore 加密保存本机凭据，共享官方 CAS 与教务 Session，并通过真实 JSON API 同步数据。云服务暂停。
+**本项目基于 SleepDown课程表 v1.2.6 完整源码修改；原作者：xiaomanjun233；原项目：https://github.com/xiaomanjun233/SleepDown-Schedule。** 这是独立川职适配分支，不代表学校或 SleepDown 官方。原许可、版权和组件说明保留。
 
-正在整理第一版源码与原签名 APK。实际验证结果会随源码提交；本说明不代表实机登录、重启与会话过期验收已完成。
+课间以课程为中心，沿用 SleepDown 的 Miuix 组件、双入口玻璃底栏、日周视图、渐进切周、课程编辑、弹窗和切页动效。川职认证和同步接入原生界面及 Room，不再以 OpenWakeUp 作为界面基底。
 
-密码、个人数据、Cookie、抓包文件与私有签名材料不进入仓库。
+## 使用入口
 
-致谢项目：[OpenWakeUp · LonelyMarch](https://github.com/LonelyMarch/OpenWakeUp)。视觉与动效参考：[SleepDown-Schedule · xiaomanjun233](https://github.com/xiaomanjun233/SleepDown-Schedule)。原有许可证与源码署名保留。
+| 需要什么 | 说明 |
+| --- | --- |
+| 首次登录、看课与自动刷新 | [使用方法](docs/SCVTC_USAGE.md) |
+| 基底、认证、接口与数据迁移 | [构建原理](docs/SCVTC_ARCHITECTURE.md) |
+| 本机加密、联网与删除 | [隐私说明](docs/SCVTC_PRIVACY.md) |
+| 自行编译与签名 | [源码构建](docs/SCVTC_ARCHITECTURE.md#构建) |
+| 问题反馈 | [本项目 Issues](https://github.com/zwwd1/scvtc-kejian/issues) |
+| 更多校园功能 | [川职·知学](https://github.com/zwwd1/scvtc-zhixue) |
+
+## 工作方式
+
+首次在官方 CAS 页面完成登录后，App 继续建立教务 Session，以真实学生身份 JSON 验证当前账号，再读取个人课表。密码和认证备份使用 Android Keystore 与 AES-256-GCM 在本机保存。之后优先复用会话，失效时自动尝试恢复并继续同步；学校要求补充认证时仍需本人完成。
+
+课表按账号和学期保存，支持离线查看。同步失败保留课程，本地手动编辑与删除也保留。学校未提供的上下课时间不编造，需要提醒时可配置实际作息。
+
+覆盖升级沿用 `cn.scvtc.campus.preview` 与原签名。旧课表从原数据库只读迁移，迁移完成标记和课程一起提交，源数据保留；加密登录的 Keystore 身份沿用。新安装、历史版本升级和真实 Session 过期恢复分别验证，不把其中一个通过称作全部通过。
+
+## 隐私
+
+**云同步、上游云配置和安装统计暂停。** 系统云备份与设备迁移备份关闭。密码、Cookie、个人抓包与签名私钥不进入 Git、APK 明文资源或普通导出。普通课程缓存由应用沙箱与 Android 设备加密保护，不称为 SQLCipher 全库加密。
+
+可选 AI、天气、适配资源和项目更新有各自联网行为；主动导出可能包含课程、教师和地点，需作为个人文件保管。
+
+## 源码构建
+
+JDK 21、Android SDK Platform 37.0、Build Tools 37.0.0，使用项目 Gradle Wrapper。`third-party/miuix` 是带 SleepDown 补丁的 Miuix 0.9.3，`third-party/kyant-backdrop` 保留原版玻璃实现。版本、包名、签名和源码对应关系应随 APK 一起核对。
+
+当前正在完成重构后的发布构建与设备验收；文档描述实现流程，尚未完成的验收不写作通过。临时脚本、构建缓存、私人配置与诊断材料留在仓库外。
+
+## 致谢项目与许可
+
+- [SleepDown-Schedule · xiaomanjun233](https://github.com/xiaomanjun233/SleepDown-Schedule)：应用基底、UI、动效与设计系统。
+- [Miuix](https://github.com/compose-miuix-ui/miuix)：界面组件，沿用基底补丁。
+- [AndroidLiquidGlass · Kyant0](https://github.com/Kyant0/AndroidLiquidGlass)：玻璃渲染。
+- [shiguang_warehouse](https://github.com/xingheyuzhuan/shiguang_warehouse)：基底保留的适配资源。
+
+遵循 [SleepDown 署名非商业、源码可见许可 1.1](LICENSE.md)，不是 OSI 定义的开源许可。第三方组件按 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 中的各自许可使用。原项目说明保留在 [UPSTREAM_README.md](docs/UPSTREAM_README.md)。
