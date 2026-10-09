@@ -107,6 +107,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColor
@@ -4742,6 +4743,10 @@ internal fun AppTopBar(
     val adaptiveTopBarColor = LocalAdaptiveGlass.current.contentColor
     val homeTextColor = adaptiveTopBarColor
     if (screen is Screen.Home) {
+        val sync by cn.scvtc.campus.CampusSyncStatus.state.collectAsStateWithLifecycle()
+        val refreshContext = LocalContext.current
+        val refreshScope = rememberCoroutineScope()
+        var refreshRequested by remember { mutableStateOf(false) }
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -4767,7 +4772,7 @@ internal fun AppTopBar(
                     .align(Alignment.CenterStart)
                     .fillMaxWidth()
                     .fillMaxHeight()
-                    .padding(start = 16.dp, end = 120.dp),
+                    .padding(start = 16.dp, end = 166.dp),
                 contentAlignment = Alignment.CenterStart
             ) {
                 HomeDateTitle(
@@ -4810,6 +4815,27 @@ internal fun AppTopBar(
                     visible = !addButtonHidden,
                     onClick = onToggleAddMenu,
                     onButtonPositioned = onAddButtonPositioned
+                )
+                HomeIconButton(
+                    backdrop = backdrop,
+                    config = state.config,
+                    iconRes = R.drawable.ic_refresh,
+                    contentDescription = if(sync.busy || refreshRequested) "正在同步课表" else "刷新课表",
+                    selected = false,
+                    enabled = !sync.busy && !refreshRequested,
+                    onClick = {
+                        if(!sync.busy && !refreshRequested) {
+                            refreshRequested = true
+                            refreshScope.launch {
+                                try {
+                                    val profile = withContext(Dispatchers.IO) { AutoRefreshScheduleStore.load(refreshContext) }
+                                    if(profile?.schoolId == cn.scvtc.campus.ScvtcNativeBridge.SCHOOL)
+                                        withContext(Dispatchers.IO) { cn.scvtc.campus.ScvtcNativeBridge.sync(refreshContext, profile.username) }
+                                    else refreshContext.startActivity(Intent(refreshContext, cn.scvtc.campus.ScvtcLoginActivity::class.java))
+                                } finally { refreshRequested = false }
+                            }
+                        }
+                    }
                 )
             }
         }
@@ -5087,6 +5113,7 @@ fun HomeIconButton(
     modifier: Modifier = Modifier,
     accentColor: ComposeColor = ComposeColor.Unspecified,
     visible: Boolean = true,
+    enabled: Boolean = true,
     onClick: (Float) -> Unit,
     onButtonPositioned: ((androidx.compose.ui.geometry.Rect) -> Unit)? = null
 ) {
@@ -5104,7 +5131,8 @@ fun HomeIconButton(
                     Modifier
                 }
             )
-            .graphicsLayer { alpha = if (visible) 1f else 0f }
+            .graphicsLayer { alpha = if (!visible) 0f else if(enabled) 1f else .65f }
+            .semantics { if(!enabled) disabled() }
     ) {
         HomeIconButtonVisual(
             backdrop = backdrop,
@@ -5114,7 +5142,7 @@ fun HomeIconButton(
             selected = selected,
             accentColor = accentColor,
             modifier = Modifier.fillMaxSize(),
-            isInteractive = visible,
+            isInteractive = visible && enabled,
             pressSnapshot = pressSnapshot,
             onClick = {
                 performButtonHaptic(view)
@@ -8163,6 +8191,8 @@ fun SettingsRootScreen(
     onPageChange: (SettingsPage) -> Unit
 ) {
     val context = LocalContext.current
+    cn.scvtc.campus.CampusCompanion.initialize(context)
+    var companionSettings by remember{mutableStateOf(false)}
     val scope = rememberCoroutineScope()
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
@@ -8344,6 +8374,14 @@ fun SettingsRootScreen(
                     )
                     SettingsDivider()
                     SettingsNavigationRow(
+                        "成绩与学分",
+                        "真实成绩、学期筛选与官方毕业学分要求",
+                        onClick = { context.startActivity(android.content.Intent(context, cn.scvtc.campus.AcademicActivity::class.java)) }
+                    )
+                    SettingsDivider()
+                    SettingsNavigationRow("校园助手小澄","原创蓝白角色 · 标题区互动 · 显隐与缩放",onClick={companionSettings=true})
+                    SettingsDivider()
+                    SettingsNavigationRow(
                         "通知设置",
                         "上课提醒与实时活动",
                         selected = selectedPage == SettingsPage.Notifications,
@@ -8393,6 +8431,15 @@ fun SettingsRootScreen(
         }
     }
 
+    if(companionSettings)LiquidAlertDialog(
+        title="校园助手小澄",message="角色只在课表标题的预留区域出现，可拖动和点击打招呼，不遮挡课程。当前大小 ${(cn.scvtc.campus.CampusCompanion.scale*100).toInt()}%。",
+        backdrop=backdrop,config=state.config,onDismissRequest={companionSettings=false},
+        actions=listOf(
+            LiquidAlertAction(if(cn.scvtc.campus.CampusCompanion.visible)"隐藏角色"else"显示角色",LiquidAlertActionStyle.Secondary,dismissOnClick=false){cn.scvtc.campus.CampusCompanion.show(!cn.scvtc.campus.CampusCompanion.visible)},
+            LiquidAlertAction("切换大小",LiquidAlertActionStyle.Secondary,dismissOnClick=false){cn.scvtc.campus.CampusCompanion.resize(when{cn.scvtc.campus.CampusCompanion.scale<.8f->.85f;cn.scvtc.campus.CampusCompanion.scale<.95f->1f;else->.65f})},
+            LiquidAlertAction("完成",LiquidAlertActionStyle.Primary){companionSettings=false}
+        ),messageContent={cn.scvtc.campus.CampusCompanionSlot(preview=true,reduceMotion=!android.animation.ValueAnimator.areAnimatorsEnabled())}
+    )
     SettingsUpdateDialogHost(
         dialog = updateDialog,
         backdrop = backdrop,
@@ -9398,6 +9445,7 @@ fun ChangelogSettingsScreen(
                 // One continuous panel. Canvas clipping avoids a texture as tall as all expanded
                 // versions; each details animation still owns only its own small graphics layer.
                 AboutGlassPanel(darkTheme, Modifier.fillMaxWidth(), longContent = true) {
+            changelogItem("1.1.0", "新增真实成绩与学分查询、学期筛选和本机加密缓存。修正重复导入引起的误报冲突，调整课程前先确认，并保留单周编辑。新增右上角液态玻璃刷新与同步状态。更新二次元头像图标和小澄多状态互动，使用新的赞赏原图。保留 SleepDown 双入口底栏和原有动效，云服务继续暂停。")
             changelogItem("1.0.0 · 第一版", "以 SleepDown 1.2.6 完整源码重建川职课表应用，保留 Miuix 组件、玻璃双入口底栏、课程编辑与切周动效。接入本校 CAS 认证和原生课表接口，保存本机加密凭据并恢复过期会话。覆盖升级迁移原课表，保留离线课程与本地编辑。云同步和统计暂停。")
                 }
             }

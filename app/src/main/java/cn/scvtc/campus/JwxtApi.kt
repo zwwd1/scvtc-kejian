@@ -37,13 +37,14 @@ class JwxtApi(private val client:OkHttpClient=OkHttpClient.Builder()
         const val BASE=School.ORIGIN+"/jwgr/api/"
         const val IDENTITY=BASE+"student/studentInfo/querySelf"
         const val TERM=BASE+"baseInfo/semester/selectCurrentXnXq"
+        const val TERMS=BASE+"baseInfo/semester/selectXnXqListTy"
         const val SCHEDULE=BASE+"arrange/CourseScheduleAllQuery/studentCourseSchedule"
         // The actual official range control accepts through week 30. The
         // calendar can extend it; student/semester/course values are never fixed.
         const val OBSERVED_MAX_WEEK=30
     }
     private suspend fun json(url:String,body:String?=null):String=withContext(Dispatchers.IO) {
-        require(url in setOf(IDENTITY,TERM,SCHEDULE)) {"未核验的教务接口"}
+        require(url in setOf(IDENTITY,TERM,TERMS,SCHEDULE)+JwxtServices.endpoints.values) {"未核验的教务接口"}
         // Actual official interceptor: seconds + public protocol salt "lyedu".
         // Generate a new nonce for every request, including the recovery retry.
         val timestamp=(System.currentTimeMillis()/1000).toString()
@@ -97,6 +98,44 @@ class JwxtApi(private val client:OkHttpClient=OkHttpClient.Builder()
         val maximum=maxOf(OBSERVED_MAX_WEEK,last)
         require(maximum in 1..100)
         return term to (1..maximum).toList()
+    }
+    suspend fun semesters():List<String> {
+        val rows=Json.parseToJsonElement(json(TERMS)).jsonObject["data"]?.jsonArray
+            ?:error("PAGE_CHANGED：学期列表结构变化")
+        val terms=rows.map{it.jsonPrimitive.content}
+        require(terms.isNotEmpty() && terms.size<=200 && terms.distinct().size==terms.size &&
+            terms.all{it.matches(Regex("[0-9]{4}-[0-9]{4}-[12]"))}){"学期列表无效"}
+        return terms
+    }
+    /** Replace a cache only after every official page has been read. */
+    suspend fun service(module:String,account:String,term:String):Extraction {
+        val endpoint=JwxtServices.endpoints[module]?:error("此模块尚未核验 JSON 接口")
+        if(module=="credits") {
+            val value=Json.parseToJsonElement(json(endpoint,"{}")).jsonObject["data"]?.jsonPrimitive?.contentOrNull
+                ?:error("PAGE_CHANGED：毕业学分接口结构变化")
+            require(value.toBigDecimalOrNull()?.signum()?.let{it>=0}==true){"毕业学分结果无效"}
+            return Extraction(module,account,term,endpoint,records=listOf(NativeRecord("毕业学分要求",mapOf("毕业学分要求" to value))),full=true)
+        }
+        val records=mutableListOf<NativeRecord>();val seen=mutableSetOf<String>();var expectedTotal:Int?=null
+        for(page in 1..50) {
+            currentCoroutineContext().ensureActive()
+            val data=Json.parseToJsonElement(json(endpoint,JwxtServices.pageBody(module,page))).jsonObject["data"]?.jsonObject
+                ?:error("PAGE_CHANGED：成绩接口结构变化")
+            val total=data["total"]?.jsonPrimitive?.intOrNull?:error("成绩没有有效分页总数")
+            check(total in 0..5000 && (expectedTotal==null || expectedTotal==total)){"成绩分页范围变化；原记录保留"}
+            expectedTotal=total
+            val rows=data["rows"]?.jsonArray?:error("成绩缺少 rows")
+            check(rows.size<=100 && records.size+rows.size<=total){"成绩分页返回不完整；原记录保留"}
+            records+=rows.map { element ->
+                val row=element.jsonObject
+                val id=row["studentScoreSummaryId"]?.jsonPrimitive?.contentOrNull?.takeIf(String::isNotBlank)?:row.toString()
+                check(seen.add(id)){"成绩分页重复；原记录保留"}
+                JwxtServices.record(module,row,account)
+            }
+            if(records.size==total)return Extraction(module,account,term,endpoint,records=records,full=true,emptyConfirmed=total==0)
+            check(rows.isNotEmpty()){"成绩分页未完成；原记录保留"}
+        }
+        error("成绩分页超过读取上限；原记录保留")
     }
     suspend fun schedule(account:String,term:String,weeks:List<Int>):JwxtSchedule {
         require(weeks.isNotEmpty() && weeks==weeks.distinct().sorted() && weeks.all {it in 1..100})

@@ -69,35 +69,14 @@ internal fun launcherAliasClassName(alias: LauncherAlias): String =
     LauncherAliasNamespace + alias.classSuffix
 
 /**
- * 根据当前选择的图标风格和模式，返回对应的 mipmap 资源 ID。
- * 用于在应用内显示当前使用的图标（如关于页）。
+ * Direct raster resource for Compose and widgets. Launcher adaptive icons stay
+ * on the existing aliases; painterResource cannot load XML bitmap wrappers.
  */
+@Suppress("UNUSED_PARAMETER")
 fun currentIconResId(
     context: Context,
     darkTheme: Boolean = AppIconManager.currentDarkTheme(context)
-): Int {
-    val style = AppIconManager.currentStyle(context)
-    val mode = AppIconManager.currentMode(context)
-    
-    // 解析实际使用的模式
-    val resolvedMode = when (mode) {
-        AppIconMode.LIGHT, AppIconMode.DARK -> mode
-        AppIconMode.FOLLOW_DARK_MODE -> if (darkTheme) AppIconMode.DARK else AppIconMode.LIGHT
-    }
-    
-    return when (style) {
-        AppIconStyle.MINIMAL -> when (resolvedMode) {
-            AppIconMode.LIGHT -> com.xiaomanjun.sleepdownschedule.R.drawable.ic_kejian_minimal
-            AppIconMode.DARK -> com.xiaomanjun.sleepdownschedule.R.drawable.ic_kejian_minimal
-            AppIconMode.FOLLOW_DARK_MODE -> com.xiaomanjun.sleepdownschedule.R.drawable.ic_kejian_minimal
-        }
-        AppIconStyle.KANBAN -> when (resolvedMode) {
-            AppIconMode.LIGHT -> com.xiaomanjun.sleepdownschedule.R.drawable.ic_kejian_calendar
-            AppIconMode.DARK -> com.xiaomanjun.sleepdownschedule.R.drawable.ic_kejian_calendar
-            AppIconMode.FOLLOW_DARK_MODE -> com.xiaomanjun.sleepdownschedule.R.drawable.ic_kejian_calendar
-        }
-    }
-}
+): Int = com.xiaomanjun.sleepdownschedule.R.drawable.campus_icon_portrait
 
 /** Fixed full-color drawable aliases for SystemUI, sharing each explicit light/dark PNG. */
 fun currentLiveUpdateIconResId(context: Context): Int {

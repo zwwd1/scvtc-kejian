@@ -37,7 +37,9 @@ fun buildWeekConflictGroups(
 ): List<WeekConflictGroup> {
     if (periodIndexes.isEmpty()) return emptyList()
     val positionByPeriod = periodIndexes.withIndex().associate { it.value to it.index }
-    val segments = courses.flatMap { course ->
+    // Imported and migrated rows can describe the same occurrence with different IDs,
+    // whitespace, week ranges or colours. Collapse the view only; keep every database row.
+    val segments = courses.sortedBy { it.id }.distinctBy { it.occurrenceIdentity() }.flatMap { course ->
         val positions = course.periods
             .mapNotNull(positionByPeriod::get)
             .distinct()
@@ -120,12 +122,23 @@ fun CourseEntity.conflictsWith(other: CourseEntity, week: Int): Boolean {
     return conflictsWith(other, week, emptyList())
 }
 
+private data class OccurrenceIdentity(
+    val schedule:Int,val name:String,val teacher:String,val room:String,val day:Int,
+    val periods:List<Int>,val start:String?,val end:String?,val periodTimes:String?,val note:String
+)
+
+private fun CourseEntity.occurrenceIdentity()=OccurrenceIdentity(
+    scheduleId,name.replace(Regex("\\s+"),""),teacher.orEmpty().replace(Regex("\\s+"),""),
+    location.orEmpty().replace(Regex("\\s+"),""),weekday,periods.distinct().sorted(),
+    customStartTime,customEndTime,customPeriodTimes,note.orEmpty().trim()
+)
+
 fun CourseEntity.conflictsWith(
     other: CourseEntity,
     week: Int,
     periodDefinitions: List<PeriodEntity>
 ): Boolean {
-    if (id == other.id || scheduleId != other.scheduleId || weekday != other.weekday) return false
+    if (id == other.id || scheduleId != other.scheduleId || weekday != other.weekday || occurrenceIdentity()==other.occurrenceIdentity()) return false
     if (week !in weeks || week !in other.weeks) return false
     if (!parityMatches(weekParity, week) || !parityMatches(other.weekParity, week)) return false
     if (periodDefinitions.isNotEmpty() && (hasCustomTime() || other.hasCustomTime())) {

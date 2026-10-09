@@ -1373,7 +1373,7 @@ private val changelogReleaseDates = mapOf(
 @Composable
 internal fun CollapsibleChangelogRow(version: String, body: String) {
     val isCurrentVersion = version == BuildConfig.VERSION_NAME || version == "下一版本（开发中）"
-    val releaseDate = changelogReleaseDates[version]
+    val releaseDate = if(version == "1.1.0" || version == "1.0.0 · 第一版") "2026-10-09" else changelogReleaseDates[version]
     val entries = remember(body) {
         val rawEntries = if ('\n' in body) {
             body.lineSequence()

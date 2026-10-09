@@ -19,7 +19,19 @@ val releaseStorePassword = releaseSecret("sleepdown.releaseStorePassword", "SLEE
 val releaseKeyAlias = releaseSecret("sleepdown.releaseKeyAlias", "SLEEPDOWN_RELEASE_KEY_ALIAS")
 val releaseKeyPassword = releaseSecret("sleepdown.releaseKeyPassword", "SLEEPDOWN_RELEASE_KEY_PASSWORD")
 val remoteConfigSecret = releaseSecret("sleepdown.remoteConfigSecret", "SLEEPDOWN_REMOTE_CONFIG_SECRET").orEmpty()
-val sleepDownVersionName = "1.0.0"
+val sleepDownVersionName = "1.1.0"
+val donationInput=providers.environmentVariable("SCVTC_DONATION_PNG").orNull
+val donationAssets=layout.buildDirectory.dir("generated/campus-donation")
+val stageCampusDonation=tasks.register("stageCampusDonation") {
+    inputs.property("included",donationInput!=null)
+    if(donationInput!=null)inputs.file(file(donationInput))
+    outputs.dir(donationAssets)
+    doLast {
+        val destination=donationAssets.get().asFile.resolve("epiphany-donation.png")
+        if(donationInput==null)destination.delete()
+        else{destination.parentFile.mkdirs();file(donationInput).copyTo(destination,overwrite=true)}
+    }
+}
 val skipReleaseResourceShrink = providers.gradleProperty("sleepdown.skipReleaseResourceShrink")
     .map(String::toBoolean)
     .getOrElse(false)
@@ -66,7 +78,7 @@ android {
         applicationId = "cn.scvtc.campus.preview"
         minSdk = 33
         targetSdk = 36
-        versionCode = 11
+        versionCode = 12
         versionName = sleepDownVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "SLEEPDOWN_API_BASE_URL", "\"https://api.sleepdownschedule.cn\"")
@@ -152,8 +164,13 @@ android {
     }
 
 }
+android.sourceSets.getByName("main").assets.directories.add(donationAssets.get().asFile.absolutePath)
+tasks.named("preBuild"){dependsOn(stageCampusDonation)}
 
 androidComponents {
+    beforeVariants(selector().withBuildType("release")) { variant ->
+        variant.hostTests.getValue(com.android.build.api.variant.HostTestBuilder.UNIT_TEST_TYPE).enable = true
+    }
     onVariants(selector().withName(Pattern.compile("(github|store)BenchmarkRelease"))) { variant ->
         variant.applicationId.set("${variant.applicationId.get()}.benchmark")
     }

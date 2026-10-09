@@ -3218,6 +3218,7 @@ fun WeekCourseBlock(
     var bodyDragging by remember(course.id, editWeek) { mutableStateOf(false) }
     var handleDragging by remember(course.id, editWeek) { mutableStateOf(false) }
     var conflictActionResolving by remember(course.id, editWeek) { mutableStateOf(false) }
+    var pendingConflictMove by remember(course.id,editWeek){mutableStateOf<CourseEntity?>(null)}
     var conflictFlightTarget by remember(course.id, editWeek) { mutableStateOf<CourseEntity?>(null) }
     val conflictPillDismiss = remember(course.id, editWeek) { Animatable(0f) }
     val conflictCardFlight = remember(course.id, editWeek) { Animatable(0f) }
@@ -3877,29 +3878,7 @@ fun WeekCourseBlock(
                                 weekdayCount = weekdayCount
                             )
                             if (moved != null) {
-                                conflictFlightTarget = moved
-                                conflictActionResolving = true
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                scope.launch {
-                                    conflictPillDismiss.snapTo(0f)
-                                    conflictCardFlight.snapTo(0f)
-                                    conflictPillDismiss.animateTo(
-                                        1f,
-                                        tween(
-                                            durationMillis = 165,
-                                            easing = CubicBezierEasing(0.32f, 0f, 0.68f, 1f)
-                                        )
-                                    )
-                                    delay(24)
-                                    conflictCardFlight.animateTo(
-                                        1f,
-                                        tween(
-                                            durationMillis = 420,
-                                            easing = CubicBezierEasing(0.16f, 0.82f, 0.18f, 1f)
-                                        )
-                                    )
-                                    onResolveConflict(moved)
-                                }
+                                pendingConflictMove=moved
                             } else {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             }
@@ -3915,6 +3894,25 @@ fun WeekCourseBlock(
                         color = pillTextColor
                     )
                 }
+            }
+            pendingConflictMove?.let{moved->
+                com.xiaomanjun.sleepdownschedule.core.ui.designsystem.LiquidAlertDialog(
+                    title="调整本周课程？",
+                    message="仅修改第${editWeek}周：从周${course.weekday}第${course.periods.minOrNull()}–${course.periods.maxOrNull()}节移到周${moved.weekday}第${moved.periods.minOrNull()}–${moved.periods.maxOrNull()}节。学校课表不会被修改。",
+                    backdrop=activeCardBackdrop,config=config,onDismissRequest={pendingConflictMove=null},
+                    actions=listOf(
+                        com.xiaomanjun.sleepdownschedule.core.ui.designsystem.LiquidAlertAction("取消",com.xiaomanjun.sleepdownschedule.core.ui.designsystem.LiquidAlertActionStyle.Secondary){pendingConflictMove=null},
+                        com.xiaomanjun.sleepdownschedule.core.ui.designsystem.LiquidAlertAction("确认调整",com.xiaomanjun.sleepdownschedule.core.ui.designsystem.LiquidAlertActionStyle.Primary){
+                            pendingConflictMove=null;conflictFlightTarget=moved;conflictActionResolving=true
+                            scope.launch{
+                                conflictPillDismiss.snapTo(0f);conflictCardFlight.snapTo(0f)
+                                conflictPillDismiss.animateTo(1f,tween(165,easing=CubicBezierEasing(.32f,0f,.68f,1f)))
+                                delay(24);conflictCardFlight.animateTo(1f,tween(420,easing=CubicBezierEasing(.16f,.82f,.18f,1f)))
+                                onResolveConflict(moved)
+                            }
+                        }
+                    )
+                )
             }
             AnimatedVisibility(
                 visible = editMode,

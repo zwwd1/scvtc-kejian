@@ -39,12 +39,6 @@ fun DonateSettingsScreen(
 	state: AppState,
 	backdrop: Backdrop?
 ) {
-	val scope = rememberCoroutineScope()
-	val remoteConfigState by SleepDownRemoteConfig.state.collectAsStateWithLifecycle()
-	val donationSection = remoteConfigState.bootstrap?.donations
-	LaunchedEffect(Unit) {
-		SleepDownRemoteConfig.refresh(scope, force = true)
-	}
     val topPadding = detailContentTopPadding()
     LazyColumn(
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = topPadding, bottom = DockScrollPadding),
@@ -52,31 +46,15 @@ fun DonateSettingsScreen(
     ) {
         item {
             SettingsGroup(backdrop = backdrop, config = state.config, modifier = Modifier.fillMaxWidth()) {
-                SettingsInfoRow("感谢支持", "SleepDown 课程表会继续保持简洁、免费和尽量少打扰。你的捐赠会用于测试设备、应用维护和后续功能适配。捐赠完全自愿，不会影响任何功能使用。")
+                SettingsInfoRow("Epiphany 的赞赏码", "自愿赞赏用于川职应用的日常维护，不影响任何功能使用。本应用不是学校收费服务。")
             }
         }
         item {
-            Image(
-                painter = painterResource(R.drawable.donate_reward),
-                contentDescription = "微信赞赏码",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedRectangle(28.dp)),
-                contentScale = ContentScale.FillWidth
-            )
+            cn.scvtc.campus.CampusDonationImage()
         }
-		if (donationSection?.published == true) {
-			item(key = "donation-thanks-inline") {
-				DonationThanksPanel(
-					state = state,
-					backdrop = backdrop,
-					section = donationSection
-				)
-			}
-		}
         item {
             SettingsGroup(backdrop = backdrop, config = state.config, modifier = Modifier.fillMaxWidth()) {
-                SettingsInfoRow("使用方式", "打开微信扫一扫，识别上方赞赏码即可。谢谢你愿意支持这个小小的课程表继续变好。")
+                SettingsInfoRow("使用方式", "点按查看完整原图，或保存后在微信扫一扫中从相册识别。致谢 SleepDown-Schedule 与 Miuix；完整版权与许可见项目说明。")
             }
         }
     }

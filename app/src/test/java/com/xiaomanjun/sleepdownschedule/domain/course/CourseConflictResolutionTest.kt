@@ -8,6 +8,18 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CourseConflictResolutionTest {
+    @Test fun `equivalent imported occurrences do not conflict but records remain intact`() {
+        val original=course(1,listOf(1,2)).copy(name="课程 A",teacher="教师",location="教学楼 206")
+        val duplicate=original.copy(id=2,name="课程A",location="教学楼206",weeks=listOf(1,3))
+        val input=listOf(original,duplicate)
+        val groups=buildWeekConflictGroups(input,(1..4).toList())
+        assertEquals(2,input.size)
+        assertEquals(1,groups.single().segments.size)
+        assertFalse(groups.single().hasConflict)
+        assertFalse(original.conflictsWith(duplicate,1))
+        assertTrue(original.conflictsWith(duplicate.copy(teacher="其他教师"),1))
+    }
+
     @Test
     fun `splits discontinuous periods into separate visual segments`() {
         val groups = buildWeekConflictGroups(

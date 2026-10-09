@@ -6,6 +6,12 @@
 
 课间以课程为中心，沿用 SleepDown 的 Miuix 组件、双入口玻璃底栏、日周视图、渐进切周、课程编辑、弹窗和切页动效。川职认证和同步接入原生界面及 Room，不再以 OpenWakeUp 作为界面基底。
 
+## 1.1.0 维护版
+
+本轮新增真实成绩与学分、实时同步反馈与右上角液态玻璃刷新，修正重复导入产生的误报冲突和单周调整。保留 SleepDown 的原有双入口、组件和动效。两版图标按用户二次元参考重新生成，校园助手小澄提供微笑、侧目、眨眼、思考和点击回应。
+
+[按图片逐项的修改与验收](docs/OPTIMIZATION_20261009.md) · [生图素材与提示词](docs/BRANDING_20261009.md)。[1.1.0 源码分支](https://github.com/zwwd1/scvtc-kejian/tree/codex/unified-optimization-20261009)。本轮 APK 在本机以原签名打包，含用户指定的赞赏原图；为避免公开支付资料，原图和这批 APK 不进入公开 Git。下方 1.0.0 为保留的历史第一版，不能当作本轮修复产物。
+
 ## 下载与验证
 
 - [1.0.0 原签名 APK](https://raw.githubusercontent.com/zwwd1/scvtc-kejian/main/dist/scvtc-campus-old-1.0.0.apk) · [SHA-256](dist/scvtc-campus-old-1.0.0.apk.sha256)
@@ -43,7 +49,7 @@
 
 JDK 21、Android SDK Platform 37.0、Build Tools 37.0.0，使用项目 Gradle Wrapper。`third-party/miuix` 是带 SleepDown 补丁的 Miuix 0.9.3，`third-party/kyant-backdrop` 保留原版玻璃实现。版本、包名、签名和源码对应关系应随 APK 一起核对。
 
-已完成本地发布构建、原签名与对齐检查；在 Android 13 真机上验证了保留数据覆盖升级、真实课表读取和应用重启后免输入同步。学校 Session 过期恢复、Android 17 等未完成项目详见 [验证记录](VERIFICATION.md)。临时脚本、构建缓存、私人配置与诊断材料留在仓库外。
+已完成本地发布构建、原签名与对齐检查；在 Android 13 真机上验证了保留数据覆盖升级、真实课表读取和应用重启后免输入同步。本轮相关学分、冲突和单周规则共 14 项检查通过。后台自然长期过期、Android 17 等边界见 [本轮验收](docs/OPTIMIZATION_20261009.md)，历史记录保留在 [VERIFICATION.md](VERIFICATION.md)。临时脚本、构建缓存、私人配置与诊断材料留在仓库外。
 
 ## 致谢项目与许可
 

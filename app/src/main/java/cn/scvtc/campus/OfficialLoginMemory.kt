@@ -73,6 +73,8 @@ class OfficialLoginMemory(private val context:Context) {
         val cipher=Cipher.getInstance("AES/GCM/NoPadding");cipher.init(Cipher.DECRYPT_MODE,key(),GCMParameterSpec(128,bytes.copyOfRange(0,12)));cipher.updateAAD(account.toByteArray())
         JSONObject(String(cipher.doFinal(bytes.copyOfRange(12,bytes.size))))
     }.getOrNull()
+    internal fun sealAcademic(account:String,term:String,value:String)=seal("academic:$account:$term",value)
+    internal fun openAcademic(account:String,term:String,value:String)=open("academic:$account:$term",value)?.toString()
     /** Only observed headers for the three verified JSON endpoints are retained.
      * The per-account AES-GCM AAD prevents reuse in another account. */
     fun apiHeaders(account:String,url:String):Map<String,String> =

@@ -27,7 +27,7 @@ internal fun Meeting.nativeCourse(scheduleId: Int) = CourseEntity(
 
 /** CAS only authenticates. All imported course data comes from verified JSON APIs. */
 internal object ScvtcNativeBridge {
-    private val mutex = Mutex()
+    internal val coordinator = Mutex()
     private var foregroundAttempt = 0L
     @Volatile var interactiveLogin = false
     const val SCHOOL = "scvtc"
@@ -51,12 +51,14 @@ internal object ScvtcNativeBridge {
         }
     }
 
-    suspend fun sync(context: Context, expectedAccount: String, recover: Boolean = true): AutoRefreshOutcome = mutex.withLock {
+    suspend fun sync(context: Context, expectedAccount: String, recover: Boolean = true): AutoRefreshOutcome = coordinator.withLock {
         val app = context.applicationContext as CourseScheduleApp
         val memory = OfficialLoginMemory(app)
         val old = AutoRefreshScheduleStore.load(app)
+        CampusSyncStatus.begin(app,expectedAccount,previousSuccess=old?.lastRefreshAt?:0)
         try {
             ScvtcLegacyMigration.run(app)
+            CampusSyncStatus.phase(SyncStage.AUTHENTICATING,"正在认证学校账号…")
             memory.restoreSession(expectedAccount)
             val api = JwxtApi(headers = { memory.apiHeaders(expectedAccount, it) })
             var recovered = false
@@ -67,12 +69,14 @@ internal object ScvtcNativeBridge {
             }
             val (student, calendar, fetched) = session.withSession(expectedAccount) { student ->
                 memory.confirmed(student.account)
+                CampusSyncStatus.phase(SyncStage.READING,"正在读取真实课表…")
                 val calendar = api.calendar()
                 Triple(student, calendar, api.schedule(student.account, calendar.first.semester, calendar.second))
             }
             val account = student.account
             val term = calendar.first
             val db = app.database
+            CampusSyncStatus.phase(SyncStage.WRITING,"正在保存课表…")
             val scheduleId = db.withTransaction {
                 val ledger = db.scvtcStateDao()
                 val key = profileKey(account, term.semester)
@@ -106,15 +110,21 @@ internal object ScvtcNativeBridge {
                 lastRefreshAt = System.currentTimeMillis(),
                 lastResult = (if (recovered) "会话已自动恢复；" else "") + "已验证学生身份并同步 ${fetched.extraction.meetings.size} 项课程安排；本地编辑保留")
             AutoRefreshScheduleStore.save(app, updated)
+            CampusSyncStatus.success(app,updated.lastRefreshAt)
             AutoRefreshScheduleWorker.updateSchedule(app, updated)
             val snapshot = app.repository.activeSnapshot()
             NotificationScheduler.refreshToday(app, snapshot.courses, snapshot.config, snapshot.periods)
             TodayCoursesWidgetProvider.refreshAll(app)
             AutoRefreshOutcome(true, updated.lastResult, updated)
         } catch (e: CancellationException) {
-            if (e !is TimeoutCancellationException) throw e
+            if (e !is TimeoutCancellationException) {
+                CampusSyncStatus.phase(SyncStage.CACHE,"已停止 · 使用本机缓存")
+                throw e
+            }
+            CampusSyncStatus.failure(app)
             failure(app, "登录恢复超时；已保存的课表仍可使用")
         } catch (e: Exception) {
+            CampusSyncStatus.failure(app,e is JwxtAuthenticationRequired)
             val message = if (e is JwxtAuthenticationRequired) "学校需要补充认证，请打开官方登录；离线课表已保留"
                 else "同步未完成，离线课表已保留。请检查网络或稍后重试"
             failure(app, message)
@@ -126,7 +136,7 @@ internal object ScvtcNativeBridge {
         return AutoRefreshOutcome(false, message, AutoRefreshScheduleStore.load(app))
     }
 
-    suspend fun disconnect(context: Context) = mutex.withLock {
+    suspend fun disconnect(context: Context) = coordinator.withLock {
         AutoRefreshScheduleStore.load(context)?.let { OfficialLoginMemory(context).forget(it.username) }
         AutoRefreshScheduleWorker.updateSchedule(context, null)
         AutoRefreshScheduleStore.clear(context)

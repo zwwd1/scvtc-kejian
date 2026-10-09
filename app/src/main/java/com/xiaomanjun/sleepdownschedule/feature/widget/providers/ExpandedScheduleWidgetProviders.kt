@@ -1860,7 +1860,7 @@ internal object WeekScheduleWidgetRenderer {
         )
         val titleWidth = (
             headerRect.width() - metaPaint.measureText(metaText) - u(8f)
-        ).coerceAtLeast(u(42f))
+        ).coerceAtLeast(1f)
         canvas.drawText(
             ellipsizedWidgetText("周视图课程表", titlePaint, titleWidth),
             headerRect.left,

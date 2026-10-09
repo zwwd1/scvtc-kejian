@@ -16,6 +16,13 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:autoSizeTextType="uniform"
+            android:autoSizeMinTextSize="10sp"
+            android:autoSizeMaxTextSize="14sp"
+            android:autoSizeStepGranularity="1sp"
             android:text="@string/widget_preview_week_title"
             android:textColor="#FFFFFFFF"
             android:textSize="14sp"
@@ -24,6 +31,9 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:maxWidth="88dp"
+            android:ellipsize="end"
+            android:maxLines="1"
             android:text="@string/widget_preview_week_range"
             android:textColor="#AAFFFFFF"
             android:textSize="10sp" />

@@ -525,12 +525,20 @@ fun HomeDateTitle(
 ) {
     val color = homeForegroundColor(state.config)
     val interactionSource = remember { MutableInteractionSource() }
-    Column(
+    val sync by cn.scvtc.campus.CampusSyncStatus.state.collectAsState()
+    val syncContext=androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(Unit) {
+        com.xiaomanjun.sleepdownschedule.feature.schedule.autorefresh.AutoRefreshScheduleStore.load(syncContext)?.let {
+            cn.scvtc.campus.CampusSyncStatus.restore(syncContext,it.username,previousSuccess=it.lastRefreshAt)
+        }
+    }
+    Row(
         modifier = Modifier
             .excludeHomeAssistantPull()
             .clickable(interactionSource = interactionSource, indication = null, onClick = onReturnCurrent),
-        verticalArrangement = Arrangement.Center
+        verticalAlignment = Alignment.CenterVertically
     ) {
+    Column(Modifier.weight(1f,fill=false),verticalArrangement=Arrangement.Center){
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             HomeReadableText(
                 when {
@@ -569,6 +577,21 @@ fun HomeDateTitle(
             softWrap = false,
             overflow = TextOverflow.Ellipsis
         )
+        HomeReadableText(
+            sync.label,
+            style=MaterialTheme.typography.labelSmall.copy(fontSize=10.sp,lineHeight=12.sp),
+            color=color.copy(alpha=0.72f),maxLines=1,softWrap=false,overflow=TextOverflow.Ellipsis,
+            modifier=Modifier.clickable {
+                if(!sync.busy) {
+                    val profile=com.xiaomanjun.sleepdownschedule.feature.schedule.autorefresh.AutoRefreshScheduleStore.load(syncContext)
+                    if(profile?.schoolId==cn.scvtc.campus.ScvtcNativeBridge.SCHOOL)
+                        (syncContext.applicationContext as com.xiaomanjun.sleepdownschedule.CourseScheduleApp).applicationScope.launch{cn.scvtc.campus.ScvtcNativeBridge.sync(syncContext,profile.username)}
+                    else syncContext.startActivity(android.content.Intent(syncContext,cn.scvtc.campus.ScvtcLoginActivity::class.java))
+                }
+            }
+        )
+    }
+    cn.scvtc.campus.CampusCompanionSlot(reduceMotion=!android.animation.ValueAnimator.areAnimatorsEnabled(),working=sync.busy)
     }
 }
 
@@ -1263,7 +1286,10 @@ fun ApplyCourseDeleteDialog(
 }
 
 internal fun courseWeeksChanged(original: CourseEntity, edited: CourseEntity): Boolean {
-    return original.weeks.sorted() != edited.weeks.sorted() || original.weekParity != edited.weekParity
+    // The editor infers odd/even from an explicit week set. That representation change
+    // alone must not turn a single-week edit into an all-weeks edit.
+    fun CourseEntity.effectiveWeeks()=weeks.filter{parityMatches(weekParity,it)}.distinct().sorted()
+    return original.effectiveWeeks()!=edited.effectiveWeeks()
 }
 
 internal fun coursesVisibleInWeek(courses: List<CourseEntity>, week: Int): List<CourseEntity> {
