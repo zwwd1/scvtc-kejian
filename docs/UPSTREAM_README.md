@@ -248,4 +248,3 @@ CourseSchedule/
 - 其他用途：必须事先取得项目作者的明确书面授权。
 
 仓库中的第三方代码和资源继续遵循其原始许可证，详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
-
