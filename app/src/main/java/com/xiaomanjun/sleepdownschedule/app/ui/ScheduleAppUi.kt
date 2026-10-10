@@ -9446,6 +9446,7 @@ fun ChangelogSettingsScreen(
                 // One continuous panel. Canvas clipping avoids a texture as tall as all expanded
                 // versions; each details animation still owns only its own small graphics layer.
                 AboutGlassPanel(darkTheme, Modifier.fillMaxWidth(), longContent = true) {
+            changelogItem("1.2.1", "完善成绩与学分：新增分栏、学期选择、搜索排序、加权绩点、确认学分及可展开的成绩卡片。刷新在应用任务中继续，离开页面后保留同步。保留原有 Miuix 底栏、液态玻璃、完整动效与用户数据，云服务仍暂停。")
             changelogItem("1.2.0", "修复检查更新失败，优先读取本项目 GitHub 更新清单。使用原创川职月光壁纸与校园助手小澄，提供五种待机和互动状态。统一项目名称与反馈渠道，保留原有 Miuix 双入口底栏、液态玻璃和完整动效。保留账号、课表、本地编辑与自定义壁纸，云服务继续暂停。")
             changelogItem("1.1.0", "新增真实成绩与学分查询、学期筛选和本机加密缓存。修正重复导入引起的误报冲突，调整课程前先确认，并保留单周编辑。新增右上角液态玻璃刷新与同步状态。更新二次元头像图标和小澄多状态互动，使用新的赞赏原图。保留 SleepDown 双入口底栏和原有动效，云服务继续暂停。")
             changelogItem("1.0.0 · 第一版", "以 SleepDown 1.2.6 完整源码重建川职课表应用，保留 Miuix 组件、玻璃双入口底栏、课程编辑与切周动效。接入本校 CAS 认证和原生课表接口，保存本机加密凭据并恢复过期会话。覆盖升级迁移原课表，保留离线课程与本地编辑。云同步和统计暂停。")

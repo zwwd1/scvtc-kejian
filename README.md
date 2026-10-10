@@ -1,6 +1,12 @@
 # 川职·课间
 
-四川职业技术学院非官方 Android 应用，由 **zwwd1** 维护。1.0.0 是本项目第一版，当前维护版为 **1.2.0**。课间基于 SleepDown 完整源码重构，保留 Miuix 组件、课程与设置双入口底栏、日周课表、编辑、小组件和完整动效。
+四川职业技术学院非官方 Android 应用，由 **zwwd1** 维护。1.0.0 是本项目第一版，当前维护版为 **1.2.1**。课间基于 SleepDown 完整源码重构，保留 Miuix 组件、课程与设置双入口底栏、日周课表、编辑、小组件和完整动效。
+
+## 1.2.1
+
+成绩与学分使用原生分栏、学期选择、搜索、排序和可展开卡片，补充加权绩点、确认所得学分及学校毕业要求。刷新由应用任务继续执行，离开成绩页后仍可完成；查询不修改手工课表。
+
+[具体操作、修改位置与待用户验收事项](docs/UI_FLOWS_20261010.md)。保留现有 Miuix、壁纸和完整玻璃动效。本轮不连接手机，不执行功能或性能测试；必要构建结果见验证报告。
 
 ## 1.2.0
 
@@ -10,8 +16,8 @@
 
 ## 下载
 
-- [1.2.0 原签名 APK](https://github.com/zwwd1/scvtc-kejian/releases/download/v1.2.0/scvtc-kejian-1.2.0.apk) · [SHA-256](https://github.com/zwwd1/scvtc-kejian/releases/download/v1.2.0/scvtc-kejian-1.2.0.apk.sha256)
-- [1.2.0 发布页](https://github.com/zwwd1/scvtc-kejian/releases/tag/v1.2.0) · [对应源码](https://github.com/zwwd1/scvtc-kejian/archive/refs/tags/v1.2.0.zip)
+- [1.2.1 原签名 APK](https://github.com/zwwd1/scvtc-kejian/releases/download/v1.2.1/scvtc-kejian-1.2.1.apk) · [SHA-256](https://github.com/zwwd1/scvtc-kejian/releases/download/v1.2.1/scvtc-kejian-1.2.1.apk.sha256)
+- [1.2.1 发布页](https://github.com/zwwd1/scvtc-kejian/releases/tag/v1.2.1) · [对应源码](https://github.com/zwwd1/scvtc-kejian/archive/refs/tags/v1.2.1.zip)
 - [构建与签名对应关系](BUILD_PROVENANCE.json) · [验证范围](VERIFICATION.md)
 
 最低 Android 13。已有安装请直接覆盖，保留应用数据；不要先卸载。自行更换签名的构建不能覆盖本项目原签名 APK。
