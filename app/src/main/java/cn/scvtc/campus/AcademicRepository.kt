@@ -36,7 +36,7 @@ internal object AcademicRepository {
         val opened=OfficialLoginMemory(app).openAcademic(account,term,encrypted)?:return null
         return json.decodeFromString<AcademicSnapshot>(opened).takeIf{it.account==account}
     }
-    suspend fun refresh(app:CourseScheduleApp,account:String):Boolean=withContext(Dispatchers.IO) { ScvtcNativeBridge.coordinator.withLock {
+    suspend fun refresh(app:CourseScheduleApp,account:String):Boolean=withContext(Dispatchers.IO) { ScvtcNativeBridge.readSession {
         require(account.isNotBlank())
         CampusSyncStatus.begin(app,account,"成绩与学分",cached(app,account)?.fetchedAt?:0)
         CampusSyncStatus.phase(SyncStage.AUTHENTICATING,"正在认证学校账号…")

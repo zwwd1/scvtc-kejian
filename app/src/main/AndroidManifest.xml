@@ -37,7 +37,7 @@
         android:usesCleartextTraffic="true"
         android:theme="@style/AppTheme"
         tools:targetApi="tiramisu">
-        <activity android:name="cn.scvtc.campus.ScvtcLoginActivity" android:exported="false" />
+        <activity android:name="cn.scvtc.campus.ScvtcLoginActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name="cn.scvtc.campus.AcademicActivity" android:exported="false" />
         <activity
             android:name=".MainActivity"

@@ -71,7 +71,10 @@ fun AutoRefreshScheduleSettingsScreen(
             item {
                 SettingsGroup(backdrop = backdrop, config = state.config) {
                     SettingsInfoRow("川职教务自动同步", "首次官方登录后，自动验证学生身份并读取课表。密码在本机加密保存；网络故障不会清空课程。")
-                    SettingsActionButton("连接川职教务", backdrop, onClick = { connect() })
+                    Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                        SettingsActionButton("连接川职教务", backdrop, onClick = { connect() },
+                            modifier = Modifier.fillMaxWidth())
+                    }
                 }
             }
         }

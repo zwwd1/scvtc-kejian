@@ -61,6 +61,6 @@ Windows 使用 `gradlew.bat`。Miuix 来源由 `sleepdown.miuixSourcePath=third-
 
 发布构建保留签名校验，需要在本机环境配置 `SLEEPDOWN_RELEASE_STORE_FILE`、`SLEEPDOWN_RELEASE_STORE_PASSWORD`、`SLEEPDOWN_RELEASE_KEY_ALIAS` 和 `SLEEPDOWN_RELEASE_KEY_PASSWORD`。私有配置不写入仓库；覆盖项目历史安装必须保留原证书、`cn.scvtc.campus.preview` 和递增版本码。
 
-赞赏原图通过仓库外环境变量 `SCVTC_DONATION_PNG` 输入，未配置时公开源码不包含私人支付图；签名和原图均不提交。角色、图标与生成提示词见 [BRANDING_20261009.md](BRANDING_20261009.md)。
+赞赏原图通过仓库外环境变量 `SCVTC_DONATION_PNG` 输入，未配置时公开源码不包含私人支付图；签名和原图均不提交。角色、图标与素材来源见 [BRANDING_20261009.md](BRANDING_20261009.md)。
 
 构建结果、证书、源码对应关系与真实手机结果分别报告。编译通过不代表自动登录、所有升级来源或所有 Android 版本已经通过验收。

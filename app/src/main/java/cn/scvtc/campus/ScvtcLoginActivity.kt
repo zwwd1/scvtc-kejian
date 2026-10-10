@@ -11,10 +11,16 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -53,6 +59,23 @@ class ScvtcLoginActivity : ComponentActivity() {
             var localError by remember { mutableStateOf("") }
             val state by ScvtcNativeBridge.loginState.collectAsState()
             val callerScope=rememberCoroutineScope()
+            val focus=LocalFocusManager.current
+            val submit:()->Unit={
+                if(!state.busy) {
+                    if(!form.account.matches(Regex("[0-9]{6,20}")) || form.password.length !in 1..512) {
+                        localError="请输入学号和密码"
+                    } else {
+                        focus.clearFocus()
+                        val task=ScvtcNativeBridge.signIn(app,form.account,form.password)
+                        localError="";awaiting=true
+                        callerScope.launch {
+                            try { task.await() }
+                            catch(e:CancellationException){throw e}
+                            catch(_:Exception){ }
+                        }
+                    }
+                }
+            }
             LaunchedEffect(Unit) { config=app.repository.activeSnapshot().config }
             LaunchedEffect(state,awaiting) {
                 if(awaiting && state.account==form.account && state.verified) {
@@ -69,34 +92,26 @@ class ScvtcLoginActivity : ComponentActivity() {
                             Modifier.fillMaxSize().padding(top=detailContentTopPadding()).navigationBarsPadding()) {
                             form.password="";setResult(RESULT_OK);finish()
                         }
-                    } else Column(Modifier.fillMaxSize().padding(top=detailContentTopPadding()).imePadding()
-                        .navigationBarsPadding().verticalScroll(rememberScrollState()).padding(16.dp),
+                    } else Box(Modifier.fillMaxSize().padding(top=detailContentTopPadding()).imePadding()
+                        .navigationBarsPadding(),contentAlignment=Alignment.TopCenter) {
+                    Column(Modifier.widthIn(max=600.dp).fillMaxWidth().fillMaxHeight()
+                        .verticalScroll(rememberScrollState()).padding(16.dp),
                         verticalArrangement=Arrangement.spacedBy(16.dp)) {
                         SettingsGroup(backdrop,config) {
                             Column(Modifier.fillMaxWidth().padding(20.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
                                 Text("输入一次，后续自动同步")
                                 Text("使用学校统一认证的学号和密码。身份核验成功后，应用会在后台读取真实课表；以后会话过期也会自动恢复。")
                                 TextField(form.account,{form.account=it.trim()},label="学号",
-                                    enabled=!state.busy,singleLine=true,keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number),
+                                    enabled=!state.busy,singleLine=true,keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number,imeAction=ImeAction.Next),
                                     modifier=Modifier.fillMaxWidth())
                                 TextField(form.password,{form.password=it},label="学校密码",
-                                    enabled=!state.busy,singleLine=true,keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Password),
+                                    enabled=!state.busy,singleLine=true,keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Password,imeAction=ImeAction.Done),
+                                    keyboardActions=KeyboardActions(onDone={submit()}),
                                     visualTransformation=PasswordVisualTransformation(),modifier=Modifier.fillMaxWidth())
                                 if(localError.isNotBlank()) Text(localError)
                                 if(awaiting && state.account==form.account && state.message.isNotBlank()) Text(state.message)
-                                if(!state.busy) SettingsActionButton("登录并自动同步",backdrop,onClick={
-                                    if(!form.account.matches(Regex("[0-9]{6,20}")) || form.password.isEmpty()) {
-                                        localError="请输入学号和密码"
-                                    } else {
-                                        val task=ScvtcNativeBridge.signIn(app,form.account,form.password)
-                                        localError="";awaiting=true
-                                        callerScope.launch {
-                                            try { task.await() }
-                                            catch(e:CancellationException){throw e}
-                                            catch(_:Exception){ }
-                                        }
-                                    }
-                                },modifier=Modifier.fillMaxWidth())
+                                SettingsActionButton(if(state.busy) "正在连接学校…" else "登录并自动同步",backdrop,onClick=submit,
+                                    modifier=Modifier.fillMaxWidth().semantics { if(state.busy)disabled() })
                             }
                         }
                         Text("密码只保存在本机的加密存储中，不会进入备份、日志或云端。")
@@ -105,6 +120,8 @@ class ScvtcLoginActivity : ComponentActivity() {
                                 if(form.account.matches(Regex("[0-9]{6,20}"))) verification=true
                                 else localError="请先填写学号，再打开补充认证"
                             },modifier=Modifier.fillMaxWidth(),monochrome=true)
+                        Spacer(Modifier.height(12.dp))
+                    }
                     }
                 }
             }

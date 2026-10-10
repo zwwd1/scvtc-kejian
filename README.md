@@ -1,50 +1,58 @@
 # 川职·课间
 
-给四川职业技术学院同学用的课表工具。打开就能看今天上什么课，也能切到整周课表；临时调课、手动编辑、小组件和上课提醒都保留。
+课间是给四川职业技术学院同学用的课表应用。它以 SleepDown 源码为基础，沿用 Miuix 页面、日周课表和玻璃底栏，把川职的登录、课表、成绩与学分接进来。
 
-课间以 SleepDown 为基底，由 [zwwd1](https://github.com/zwwd1) 维护。界面沿用 Miuix 和原有玻璃动效。学校没有参与本项目，教务数据以学校系统为准。
+日常使用很简单：打开看课，点课程看详情，需要时再刷新教务。课程编辑、调课、提醒、小组件和本地导入导出都保留。
 
-[下载最新版](https://github.com/zwwd1/scvtc-kejian/releases/latest) · [使用方法](docs/SCVTC_USAGE.md) · [反馈问题](https://github.com/zwwd1/scvtc-kejian/issues)
+[下载 APK](https://github.com/zwwd1/scvtc-kejian/releases/latest) · [反馈问题](https://github.com/zwwd1/scvtc-kejian/issues) · [更新记录](release-notes/v1.2.3.md)
 
-## 开始使用
+## 课间和知学怎么选
 
-1. 安装 APK。已经装过课间的话，直接覆盖安装，保留原来的数据。
-2. 打开“连接川职教务”，填写学校统一认证的学号和密码，点击“登录并自动同步”。
-3. 身份核验后，应用会在后台读取课表和成绩。平时直接打开课表即可，会话过期会自动尝试重新认证。
-4. 在课表设置里核对学期、开学日期和节次时间。手动改过的课程会保留，学校同步不会把这些编辑直接覆盖。
+| | 课间 | [知学](https://github.com/zwwd1/scvtc-zhixue) |
+| --- | --- | --- |
+| 日常入口 | 课表和设置 | 首页、课表、服务中心和设置 |
+| 界面基础 | SleepDown、Miuix 与原有动效 | zhengfang-apk，统一接入玻璃组件 |
+| 教务记录 | 课表、成绩与学分 | 课表、成绩、学分与官网服务入口 |
+| 适合的用法 | 主要看课表，顺手查成绩 | 把课程和更多教务操作放在一起 |
 
-学校临时要求验证码、二次认证，或你改了学校密码时，需要补充一次认证。断网或认证失败仍能看上次保存的课表和成绩。
+两版都由 [zwwd1](https://github.com/zwwd1) 维护，都是非官方、开源的学生项目。学校记录以教务系统为准。
 
-## 成绩与学分
+## 安装后怎么用
 
-成绩按学期查看，可以搜索课程、按成绩或学分排序。点开课程卡片能看学校返回的详情，“需要留意”筛选用于查看未通过的成绩。
+需要 Android 13 或以上版本。首次安装且没有数据时，会打开“连接川职教务”。填学校统一认证的学号和密码，点击“登录并自动同步”即可；不需要自己复制 Cookie。
 
-学分页把已经获得的学分和学校毕业要求分开展示。只有学校确实返回毕业要求时才显示进度；重修记录按课程代码合并，不把各学期所得重复相加。学分达到要求不代表学校已完成毕业审核。
+核验身份后先进入课表，数据在后台继续读取。以后会话过期，应用会尝试重新认证并继续同步。学校确实要求验证码或二次认证时，再打开学校认证页完成。修改学校密码后，也需要更新本机保存的密码。
 
-## 隐私
+已经安装过课间，直接覆盖安装。课表、课程编辑和已保存记录继续保留。刷新失败也能看上次的数据，不会把离线课表清空。
 
-密码和学校会话保存在本机，使用 Android Keystore 与 AES-GCM 加密。不会写进源码、安装包资源、普通日志或导出备份。成绩查询缓存按账号加密；日常课表存放在应用自己的 Room 数据库里，依靠 Android 应用沙箱和设备存储保护。
+在设置里进入当前课表详情，可以调整开学日期、教学周、节次时间、显示规则和课前提醒。成绩按学期查看、搜索和筛选；学分页分别展示已获学分和学校返回的毕业要求。
 
-云服务和匿名统计已暂停。AI 需要自行配置服务，只有你启用课表授权时才会发送课程上下文。
+外观只有一套设置：开启液态玻璃时使用折射与跟随动效，关闭后改用高斯模糊。壁纸、底栏和卡片参数可以自行调整。AI 助手是可选功能，需要配置自己的模型服务。
 
-[完整隐私说明](docs/SCVTC_PRIVACY.md)
+[详细使用方法](docs/SCVTC_USAGE.md)
 
-## 源码与构建
+## 它是怎样实现的
 
-学校登录在 `cn/scvtc/campus`，课表界面在 `com/xiaomanjun/sleepdownschedule`。CAS 负责认证，教务接口负责读取数据，Room 保存课表；网页不用于冒充原生课表数据。
+学校认证放在 `cn/scvtc/campus`，课表界面和编辑功能保留在 `com/xiaomanjun/sleepdownschedule`，数据规则放在 `school-core`。
 
-构建使用 JDK 21、Android SDK 37.0 和 Gradle Wrapper：
+登录走学校 CAS 认证，再建立教务会话；只有学生身份接口确认账号一致，才保存连接。课表、成绩和学分从真实教务接口读取，课表写入 Room 后由原生页面展示。同步合并学校变更时保留本地编辑，不靠网页截图生成课程。
+
+密码、会话和成绩缓存使用 Android Keystore 与 AES-GCM 按账号加密。课表数据库放在应用沙箱中。普通导出不含登录凭据，云服务和匿名统计保持暂停。AI 的课程授权默认关闭。
+
+[构建原理](docs/SCVTC_ARCHITECTURE.md) · [隐私说明](docs/SCVTC_PRIVACY.md)
+
+## 自行构建
+
+使用 JDK 21、Android SDK 37.0 和仓库里的 Gradle Wrapper：
 
 ```powershell
 .\gradlew.bat :app:assembleGithubRelease
 ```
 
-自行构建需要自己的签名。正式版私钥放在仓库之外，同一应用的官方更新一直沿用原签名。下载页里的 APK、源码标签和校验文件应对应同一个版本。
+签名配置通过仓库外的文件和环境变量提供，具体配置见构建说明。自行签名的 APK 与正式版签名不同，不能互相覆盖；本项目正式更新沿用第一版的包名和签名。
 
-[构建原理](docs/SCVTC_ARCHITECTURE.md) · [这版改了什么](release-notes/v1.2.2.md) · [实际验证范围](VERIFICATION.md)
+正式包、源码标签和 SHA-256 随 [GitHub Release](https://github.com/zwwd1/scvtc-kejian/releases) 一起发布。[验证报告](VERIFICATION.md) 会注明实际完成的检查，以及尚需实机确认的部分。
 
-## 致谢
+## 致谢项目
 
-[SleepDown-Schedule](https://github.com/xiaomanjun233/SleepDown-Schedule) 提供应用基底；Miuix、AndroidLiquidGlass 和其他组件沿用各自许可。必要的版权和许可信息保留在 [LICENSE.md](LICENSE.md) 与 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
-
-需要更多教务功能，可以看看另一个项目：[川职·知学](https://github.com/zwwd1/scvtc-zhixue)。
+[SleepDown-Schedule](https://github.com/xiaomanjun233/SleepDown-Schedule)、Miuix 和 AndroidLiquidGlass 为项目提供了基础。源码和第三方组件的许可见 [LICENSE.md](LICENSE.md) 与 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

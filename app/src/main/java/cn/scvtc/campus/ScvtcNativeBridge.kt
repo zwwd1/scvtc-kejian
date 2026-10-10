@@ -31,27 +31,41 @@ internal object ScvtcNativeBridge {
     private var foregroundAttempt = 0L
     @Volatile var interactiveLogin = false
     private var loginJob: Deferred<JwxtStudent>? = null
+    private var foregroundJob: Job? = null
+    private var sessionReadJob: Job? = null
     val loginState = kotlinx.coroutines.flow.MutableStateFlow(NativeLoginState())
     @Synchronized
     fun signIn(app: CourseScheduleApp, account: String, password: String): Deferred<JwxtStudent> {
         loginJob?.takeIf { !it.isCompleted }?.let { return it }
         require(account.matches(Regex("[0-9]{6,20}")) && password.length in 1..512) { "请输入学号和密码" }
+        foregroundJob?.cancel()
+        sessionReadJob?.cancel()
         loginState.value = NativeLoginState(account,busy=true,message="正在连接学校并核验学生身份…")
         val job = app.applicationScope.async(start = CoroutineStart.LAZY) {
             try {
                 val student = coordinator.withLock {
                     val memory = OfficialLoginMemory(app)
+                    memory.preparePasswordSignIn(account)
                     val api = JwxtApi(headers = { memory.apiHeaders(account,it) })
-                    CasAuthManager(app,api).signIn(account,password)
+                    val verified=CasAuthManager(app,api).signIn(account,password)
+                    rememberVerifiedProfile(app,verified.account,api.calendar())
+                    verified
                 }
                 loginState.value = NativeLoginState(account,verified=true,message="学校身份已核验，正在后台读取课表")
                 student
             } catch(e: CancellationException) {
                 loginState.value = NativeLoginState(account,message="已停止本次登录，原数据保留"); throw e
             } catch(e: Exception) {
-                val extra = e is JwxtAuthenticationRequired
+                val auth=e as? JwxtAuthenticationRequired
+                val extra = auth?.stage in setOf(AuthenticationStage.CHALLENGE,AuthenticationStage.SESSION)
                 loginState.value = NativeLoginState(account,requiresVerification=extra,
-                    message=if(extra) "学校暂时需要补充认证，已填信息会保留" else "这次登录未完成，请检查网络或稍后重试；原数据保留")
+                    message=when(auth?.stage) {
+                        AuthenticationStage.CHALLENGE -> "学校显示了验证码或二次认证，请补充认证；已填信息保留"
+                        AuthenticationStage.FORM -> "学校登录表单未准备好，请重试；也可打开学校认证页继续"
+                        AuthenticationStage.CALLBACK -> "学校认证回调等待超时，请重试；原数据保留"
+                        AuthenticationStage.SESSION -> "学校会话尚未建立，可补充认证；原数据保留"
+                        null -> "这次登录未完成，请检查网络或稍后重试；原数据保留"
+                    })
                 throw e
             }
         }
@@ -59,7 +73,7 @@ internal object ScvtcNativeBridge {
         job.invokeOnCompletion { cause ->
             synchronized(this) { if(loginJob===job) loginJob=null }
             if(cause==null) app.applicationScope.launch {
-                val result=sync(app,account)
+                val result=sync(app,account,recover=false)
                 if(result.success) AcademicRepository.requestRefresh(app,account)
             }
         }
@@ -72,12 +86,56 @@ internal object ScvtcNativeBridge {
     private fun schoolKey(course: CourseEntity) = scvtcKey(listOf(course.name, course.teacher,
         course.location, course.weekday, course.periods).joinToString("|"))
 
+    /** Persist the verified account before returning to the caller. A long first
+     * timetable read may be interrupted without losing the connected identity. */
+    private suspend fun rememberVerifiedProfile(app:CourseScheduleApp,account:String,calendar:Pair<cn.scvtc.campus.core.OfficialTerm,List<Int>>) {
+        ScvtcLegacyMigration.run(app)
+        val previous=AutoRefreshScheduleStore.load(app)?.takeIf { it.schoolId==SCHOOL && it.username==account }
+        val term=calendar.first
+        val currentConfig=app.repository.activeSnapshot().config
+        val today=LocalDate.now(java.time.ZoneId.of("Asia/Shanghai"))
+        val weeks=calendar.second.max()
+        val teachingWeek=(ChronoUnit.WEEKS.between(term.firstMonday,today)+1).toInt().coerceIn(1,weeks)
+        val id=app.database.withTransaction {
+            val ledger=app.database.scvtcStateDao()
+            val key=profileKey(account,term.semester)
+            val existing=ledger.get(key)?.toIntOrNull()?.takeIf { candidate ->
+                app.database.scheduleProfileDao().getProfiles().any { it.id==candidate }
+            }
+            val profileId=existing ?: app.database.scheduleProfileDao().upsertProfile(ScheduleProfileEntity(
+                name="川职 ${term.semester} · ${account.takeLast(4)}")).toInt().also { ledger.put(ScvtcState(key,it.toString())) }
+            if(app.database.configDao().getConfig(profileId)==null) {
+                app.database.configDao().upsertConfig(currentConfig.copy(id=profileId,
+                    totalWeeks=weeks,currentWeek=teachingWeek,termStartDate=term.firstMonday.toString(),autoCurrentWeek=true,
+                    termState=if(today<term.firstMonday)ScheduleTermState.UPCOMING else ScheduleTermState.ACTIVE))
+            }
+            app.database.scheduleProfileDao().activateProfile(profileId)
+            profileId
+        }
+        val profile=AutoRefreshScheduleProfile(SCHOOL,"四川职业技术学院","scvtc-native-v1",
+            "官方教务接口",account,"",id,automatic=previous?.automatic?:true,
+            frequencyMinutes=previous?.frequencyMinutes?:AutoRefreshFrequency.DailyMinutes,
+            avatarPath=previous?.avatarPath,lastRefreshAt=previous?.takeIf { it.scheduleId==id }?.lastRefreshAt?:0,
+            lastResult="学校身份已核验，正在读取课表")
+        AutoRefreshScheduleStore.save(app,profile)
+        AutoRefreshScheduleWorker.updateSchedule(app,profile)
+    }
+
+    internal suspend fun <T> readSession(block:suspend ()->T):T=coordinator.withLock {
+        val owner=currentCoroutineContext().job
+        synchronized(this) {
+            if(loginJob?.isActive==true)throw CancellationException("主动登录正在进行")
+            sessionReadJob=owner
+        }
+        try { block() } finally { synchronized(this) { if(sessionReadJob===owner)sessionReadJob=null } }
+    }
+
     fun foreground(app: CourseScheduleApp) {
         if (interactiveLogin) return
         val now = System.currentTimeMillis()
         if (now - foregroundAttempt < 5 * 60_000) return
         foregroundAttempt = now
-        app.applicationScope.launch {
+        foregroundJob=app.applicationScope.launch {
             val migration = runCatching { ScvtcLegacyMigration.run(app) }
             if (migration.isFailure) return@launch // Never synchronize over an incomplete migration.
             val profile = AutoRefreshScheduleStore.load(app)
@@ -87,7 +145,7 @@ internal object ScvtcNativeBridge {
         }
     }
 
-    suspend fun sync(context: Context, expectedAccount: String, recover: Boolean = true): AutoRefreshOutcome = coordinator.withLock {
+    suspend fun sync(context: Context, expectedAccount: String, recover: Boolean = true): AutoRefreshOutcome = readSession {
         val app = context.applicationContext as CourseScheduleApp
         val memory = OfficialLoginMemory(app)
         val old = AutoRefreshScheduleStore.load(app)

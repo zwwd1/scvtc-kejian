@@ -81,6 +81,19 @@ class OfficialLoginMemory(private val context:Context) {
         prefs.getString("headers:$account:${Uri.parse(url).path}",null)?.let{open(account,it)}?.let{value->
             value.keys().asSequence().associateWith{value.getString(it)}
         }.orEmpty()
+    /** A new password login must not send bearer tokens from the previous
+     * session alongside its fresh cookie. Endpoint permission headers survive. */
+    fun preparePasswordSignIn(account:String) {
+        val editor=prefs.edit()
+        prefs.all.keys.filter { it.startsWith("headers:$account:") }.forEach { entry ->
+            val previous=prefs.getString(entry,null)?.let { open(account,it) } ?: return@forEach
+            listOf("authorization","x-auth-token","token").forEach { name ->
+                previous.keys().asSequence().filter { it.equals(name,true) }.toList().forEach(previous::remove)
+            }
+            editor.putString(entry,seal(account,previous.toString()))
+        }
+        check(editor.commit()) { "本机认证配置未保存，请重试" }
+    }
     private fun rememberHeaders(account:String,url:String,headers:JSONObject){
         if(Uri.parse(url).scheme!="https" || Uri.parse(url).host!="jwxt.scvtc.edu.cn" || url.substringBefore('?') !in setOf(JwxtApi.IDENTITY,JwxtApi.TERM,JwxtApi.SCHEDULE))return
         val safe=JSONObject()

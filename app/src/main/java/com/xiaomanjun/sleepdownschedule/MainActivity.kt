@@ -29,6 +29,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import com.xiaomanjun.sleepdownschedule.core.identity.AppIconManager
@@ -78,6 +80,30 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 )
+            }
+        }
+        val installation = packageManager.getPackageInfo(packageName, 0)
+        val firstInstall = installation.firstInstallTime == installation.lastUpdateTime
+        if (firstInstall && savedInstanceState == null && pendingExternalIcsUri.value == null) {
+            lifecycleScope.launch {
+                val app = application as CourseScheduleApp
+                val prefs = getSharedPreferences("scvtc-first-use", Context.MODE_PRIVATE)
+                if (prefs.getBoolean("login-offered", false)) return@launch
+                val snapshot = try {
+                    cn.scvtc.campus.ScvtcLegacyMigration.run(app)
+                    app.repository.snapshot()
+                } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+                catch (_: Exception) {
+                    android.widget.Toast.makeText(this@MainActivity,"本机记录尚未读取完成，请稍后再连接教务",android.widget.Toast.LENGTH_LONG).show()
+                    return@launch
+                }
+                val hasAccount = com.xiaomanjun.sleepdownschedule.feature.schedule.autorefresh.AutoRefreshScheduleStore.load(app) != null ||
+                    cn.scvtc.campus.OfficialLoginMemory(app).savedAccounts().isNotEmpty()
+                // Offer only once after local records have loaded, including on upgrades.
+                prefs.edit().putBoolean("login-offered", true).apply()
+                if (snapshot.allCourses.isEmpty() && !hasAccount && snapshot.schedules.size <= 1) {
+                    startActivity(Intent(this@MainActivity, cn.scvtc.campus.ScvtcLoginActivity::class.java))
+                }
             }
         }
     }
@@ -172,7 +198,7 @@ fun CourseScheduleTheme(
     val darkBlueContainer = Color(0xFF003A66)
     MaterialTheme(
         shapes = com.xiaomanjun.sleepdownschedule.core.ui.designsystem.SleepDownContinuousShapes,
-        colorScheme = if (darkTheme) {
+        colorScheme = com.xiaomanjun.sleepdownschedule.core.ui.designsystem.animatedThemePalette(if (darkTheme) {
             darkColorScheme(
                 primary = blue,
                 onPrimary = Color.White,
@@ -202,7 +228,7 @@ fun CourseScheduleTheme(
                 surfaceVariant = Color(0xFFF2F2F7),
                 surfaceContainerHigh = Color.White
             )
-        }
+        })
     ) {
         Surface(modifier = Modifier.fillMaxSize(), content = content)
     }
