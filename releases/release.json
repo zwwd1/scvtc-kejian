@@ -1,0 +1,66 @@
+{
+  "repository": "zwwd1/scvtc-kejian",
+  "version": "1.2.0",
+  "name": "川职·课间",
+  "sourceCommit": "c03dd87ebe4e8dbf77faa3538e72dd3c54f98b2c",
+  "artifact": {
+    "file": "scvtc-kejian-1.2.0.apk",
+    "packageName": "cn.scvtc.campus.preview",
+    "versionCode": 13,
+    "certificateSha256": "5cab58b4d47d14e66143be594d3a4eebb5624be7e8f6a15354126bdab47343b3",
+    "size": 19903356,
+    "sha256": "a7440f1bbbc293b4caf6d5b0a9aed4da4f8404f848dcdcbaca23f7a8cc9423d6"
+  },
+  "parts": [
+    {
+      "blob": "5bb98bf13eecab2651d8d83a78cf77f1db2a9930",
+      "size": 2097152,
+      "sha256": "8d95f420a5d141b553406cebd62019b20fc0c9dfc17b0577c73689da043cc121"
+    },
+    {
+      "blob": "13199b5fb4e3c75a3072f0c604fd1b4c452bd690",
+      "size": 2097152,
+      "sha256": "1e216a687de2cd322011f41246e261f89a682471ddfaedb7ba7808c3556c7904"
+    },
+    {
+      "blob": "a05e6b342ab3fd3d35eb64131887923908bd4c21",
+      "size": 2097152,
+      "sha256": "db369b966203da1999e1df881f5ad41f343465cfd9a8ca0161cdb622336324d3"
+    },
+    {
+      "blob": "a70e350e16be2ca744d589fcce385864b27174f8",
+      "size": 2097152,
+      "sha256": "ccc6364106c35770b83d47713f7d82273d4fc43e0bb19ea1239866f1b053a1d1"
+    },
+    {
+      "blob": "a9443f40d4d4da33766f00defc62f53b641dd7ee",
+      "size": 2097152,
+      "sha256": "2ead3a1fbe9fda87c09220b125a88c1be37bfd2708919be50360aa03c335ba71"
+    },
+    {
+      "blob": "fa7c45a1897823bff76788a9fe3997f799add81a",
+      "size": 2097152,
+      "sha256": "fb8df3b0c88ae879e65ed764c6b8ba08c1dc9f20b78194ae09b23f16d06d5dfa"
+    },
+    {
+      "blob": "de0653d2ad81c31672baab42d4d34dce30c2b3be",
+      "size": 2097152,
+      "sha256": "d91afe17a12084e6371ed118fb4b1870e069a49cee97189365fe00b139dd5d60"
+    },
+    {
+      "blob": "e53db85e3e7cad86235feb6e8a8da30e6022c1fe",
+      "size": 2097152,
+      "sha256": "448875c6b2f9f12051059383a83c313e4ed08ffa6c6d74780a8a371584a6f22a"
+    },
+    {
+      "blob": "717224207ef2212f56c41e9a6a00db6f7c5703ef",
+      "size": 2097152,
+      "sha256": "80b6c1c2acc476c7de94592c558acf6b17f945ec12bee3cfc815b70f0b095b55"
+    },
+    {
+      "blob": "5559f0bd6596d98b66e6929982d5bb811dcdcb37",
+      "size": 1028988,
+      "sha256": "85e7ecd404b0973366e1e0a459a688fe63c220def6799c45d98a384f9c09c221"
+    }
+  ]
+}

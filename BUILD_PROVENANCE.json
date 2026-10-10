@@ -1,20 +1,52 @@
 {
   "schemaVersion": 2,
   "name": "川职·课间",
-  "version": "1.2.0",
   "builtAtDate": "2026-10-10",
-  "status": "source_frozen_before_final_packaging",
+  "sourceCommit": "c03dd87ebe4e8dbf77faa3538e72dd3c54f98b2c",
+  "sourceTree": "6333af5879d1aca86c7be39bac905823727e198b",
   "sourceRepository": "https://github.com/zwwd1/scvtc-kejian",
+  "productionInputsUnchangedAfterBuild": true,
   "artifact": {
     "file": "scvtc-kejian-1.2.0.apk",
+    "sha256": "a7440f1bbbc293b4caf6d5b0a9aed4da4f8404f848dcdcbaca23f7a8cc9423d6",
+    "size": 19903356,
+    "packageName": "cn.scvtc.campus.preview",
     "versionName": "1.2.0",
     "versionCode": 13,
-    "packageName": "cn.scvtc.campus.preview",
-    "certificateSha256": "5cab58b4d47d14e66143be594d3a4eebb5624be7e8f6a15354126bdab47343b3"
+    "certificateSha256": "5cab58b4d47d14e66143be594d3a4eebb5624be7e8f6a15354126bdab47343b3",
+    "nativeLibraryCount": 4
   },
-  "finalArtifactReport": "GitHub Release attached BUILD_PROVENANCE.json and main branch report",
-  "deviceVerification": "not_run_user_will_test",
+  "checks": {
+    "manifest": true,
+    "originalSignature": true,
+    "zip16KiBAlignment": true,
+    "elf16KiBAlignment": true,
+    "crc": true,
+    "sourceAssets": true,
+    "sourceCommit": true,
+    "originalDonationPng": true,
+    "noPlaintextCredentials": true,
+    "r8Mapping": true
+  },
+  "releaseBuild": "passed",
+  "releaseLintVital": "passed",
+  "fullLint": "not_completed",
   "functionalTests": "not_run_at_user_request",
+  "deviceTests": "not_run_at_user_request",
+  "sourceArchive": {
+    "sha256": "50b4d8bb687c7be4a54b32874ff5b1b3b74048b5cd87a01548f0c1d7d7bdce03",
+    "bytes": 33932445,
+    "fileCount": 1909,
+    "matchesSourceCommit": true
+  },
+  "additionalBuildInputs": {
+    "originalDonationPngSha256": "8ebf7c9b12fbe2917878bad2be227a24987b700a1859177ae63be9bc1bd86ce5"
+  },
+  "r8Mapping": {
+    "id": "2cf13e7ca54ef6f06ec614077807d19fb3e45226bae8c4557efba3f2e922f413",
+    "sha256": "abac17468b0c173811e3ba88d409a315cc306e8b1aa26365eab5c75d4ba8c0d8"
+  },
+  "expectedReleaseUrl": "https://github.com/zwwd1/scvtc-kejian/releases/tag/v1.2.0",
   "cloudServicesPaused": true,
   "report": "VERIFICATION.md"
 }
