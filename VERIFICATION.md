@@ -20,3 +20,5 @@
 设置页、升级后保留数据、两种外观、壁纸一致性、待机状态、底栏参数、成绩页动画、检查更新与下载、自然 Session 过期恢复、不同机型和 Android 17 仍需用户实际验收。AI 需配置自己的 HTTPS 服务及密钥。云服务继续暂停，既有账号、课程、手动编辑和自选壁纸不清除。
 
 [本轮交互修改与使用步骤](docs/ITERATION_1_2_2.md) · [此前逐图修改](docs/OPTIMIZATION_20261010.md) · [使用方法](docs/SCVTC_USAGE.md) · [隐私与加密](docs/SCVTC_PRIVACY.md)。历史验证不能代替本轮验证。
+
+GitHub Release 已发布：[1.2.2](https://github.com/zwwd1/scvtc-kejian/releases/tag/v1.2.2)。下载 APK 的字节数及 SHA-256 与本机新包一致，版本标签指向上述构建提交；[发布检查](https://github.com/zwwd1/scvtc-kejian/actions/runs/38051207351)通过。应用内更新清单已按本仓库的实际公开 Release 更新。
