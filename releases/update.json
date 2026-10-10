@@ -1,5 +1,34 @@
 [
   {
+    "name": "川职·课间 1.2.3",
+    "tag_name": "v1.2.3",
+    "body": "# 川职·课间 1.2.3\n\n这次主要修复登录被误判为需要补充认证的问题，并整理首次连接教务的操作。\n\n- 新安装且没有本机数据时，先填写川职学号和密码；已有数据的覆盖安装直接进入应用。\n- 普通学校弹窗不再直接当作验证码，登录表单未准备好与认证回调超时分别提示。\n- 核验身份后先保存账号与课表连接，再在后台读取课程并安排自动刷新。\n- 「连接川职教务」按钮补齐留白，登录页处理键盘、大屏宽度和输入法提交。\n- 日夜切换增加颜色过渡，Miuix 底栏和原有玻璃效果保留。\n- 项目首页重新说明课间与知学的区别、使用方法和构建方式。\n\n直接覆盖安装即可，原签名、已有课表和编辑记录保留，云服务继续暂停。\n\n本轮不连接手机，不运行功能或性能测试。正式构建和签名检查见验证报告；学校实际登录、会话过期恢复及界面体验由用户验收。\n",
+    "html_url": "https://github.com/zwwd1/scvtc-kejian/releases/tag/v1.2.3",
+    "published_at": "2026-10-10T16:17:04Z",
+    "draft": false,
+    "prerelease": false,
+    "assets": [
+      {
+        "name": "BUILD_PROVENANCE.json",
+        "size": 1957,
+        "browser_download_url": "https://github.com/zwwd1/scvtc-kejian/releases/download/v1.2.3/BUILD_PROVENANCE.json",
+        "digest": "sha256:04f25917b93a89c025e78db405c1fafadfa40e45f121411d4984786fa3e4e5a5"
+      },
+      {
+        "name": "scvtc-kejian-1.2.3.apk",
+        "size": 19969132,
+        "browser_download_url": "https://github.com/zwwd1/scvtc-kejian/releases/download/v1.2.3/scvtc-kejian-1.2.3.apk",
+        "digest": "sha256:c6c4b10b968b633c536f3b5fd6853dd5d431c758254d9fc869fd6e80ff2077d0"
+      },
+      {
+        "name": "scvtc-kejian-1.2.3.apk.sha256",
+        "size": 89,
+        "browser_download_url": "https://github.com/zwwd1/scvtc-kejian/releases/download/v1.2.3/scvtc-kejian-1.2.3.apk.sha256",
+        "digest": "sha256:48d76bb3e6f170f999bf9cfcd02e325e77e4a43eab97dc5c1ba2ae676acd055c"
+      }
+    ]
+  },
+  {
     "name": "川职·课间 1.2.2",
     "tag_name": "v1.2.2",
     "body": "# 川职·课间 1.2.2\n\n- 学号和密码可以直接在应用里填写，登录后自动同步课表和成绩。会话过期会在后台尝试重新认证。\n- 成绩增加“需要留意”筛选；学分页面增加进度、待核对记录和学期课程入口。\n- 刷新继续使用后台任务，已有课程编辑和缓存保留。\n- 仓库说明重新整理，安装、使用和隐私说明更直接。\n\n\n直接覆盖安装即可，原签名和已有记录保留，云服务继续暂停。\n\n本轮完成正式打包、必要发布检查及签名核对；没有连接手机或运行功能、性能测试。学校实际登录、会话自然过期恢复和页面体验由用户验收。\n",
