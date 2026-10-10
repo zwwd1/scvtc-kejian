@@ -1,0 +1,31 @@
+[
+  {
+    "name": "川职·课间 1.2.0",
+    "tag_name": "v1.2.0",
+    "body": "川职·课间 1.2.0\n\n修复更新检查，改为本项目 GitHub 更新清单。新增原创川职月光壁纸和小澄五种状态；清理 Gitee 文案和日常上游渠道，保留原版 Miuix、玻璃双入口底栏与完整动效。\n\n保留原包名、原签名及已有账号、课程、查询、自选壁纸和本地编辑；云服务继续暂停。覆盖安装请勿先卸载。\n\n验证：本机 Release 构建、原证书、版本、源码关联、ZIP 完整性、16 KiB 对齐及凭据明文扫描，具体结果见 BUILD_PROVENANCE.json。本轮没有手机安装、功能测试或性能测量；学校登录自然过期恢复及 UI 体验留给用户验收。\n",
+    "html_url": "https://github.com/zwwd1/scvtc-kejian/releases/tag/v1.2.0",
+    "published_at": "2026-10-10T01:20:52Z",
+    "draft": false,
+    "prerelease": false,
+    "assets": [
+      {
+        "name": "BUILD_PROVENANCE.json",
+        "size": 1874,
+        "browser_download_url": "https://github.com/zwwd1/scvtc-kejian/releases/download/v1.2.0/BUILD_PROVENANCE.json",
+        "digest": "sha256:5b6d1b65f9ca05bddacad42cb479e87ed8248b192a44ca7c4109524f4fe79e8f"
+      },
+      {
+        "name": "scvtc-kejian-1.2.0.apk",
+        "size": 19903356,
+        "browser_download_url": "https://github.com/zwwd1/scvtc-kejian/releases/download/v1.2.0/scvtc-kejian-1.2.0.apk",
+        "digest": "sha256:a7440f1bbbc293b4caf6d5b0a9aed4da4f8404f848dcdcbaca23f7a8cc9423d6"
+      },
+      {
+        "name": "scvtc-kejian-1.2.0.apk.sha256",
+        "size": 89,
+        "browser_download_url": "https://github.com/zwwd1/scvtc-kejian/releases/download/v1.2.0/scvtc-kejian-1.2.0.apk.sha256",
+        "digest": "sha256:72bf8ed9f57e162e8c7216e17210e89a38a5e100b41120b5c65a694202d79664"
+      }
+    ]
+  }
+]
