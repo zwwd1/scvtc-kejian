@@ -7,6 +7,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,6 +18,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import cn.scvtc.campus.core.CreditSummary
@@ -50,6 +55,7 @@ class AcademicActivity : ComponentActivity() {
             var selectedTerm by rememberSaveable(account) { mutableStateOf("all") }
             var query by rememberSaveable(account) { mutableStateOf("") }
             var sort by rememberSaveable(account) { mutableIntStateOf(0) }
+            var scoreFilter by rememberSaveable(account) { mutableIntStateOf(0) }
             val state by AcademicRepository.state.collectAsState()
             LaunchedEffect(account) {
                 config = app.repository.activeSnapshot().config
@@ -71,7 +77,8 @@ class AcademicActivity : ComponentActivity() {
             val visibleRecords = remember(termRecords, query, sort) {
                 val search = query.trim()
                 val matching = termRecords.withIndex().filter {
-                    it.value.title.contains(search, true) || it.value.fields["课程代码"].orEmpty().contains(search, true)
+                    (it.value.title.contains(search, true) || it.value.fields["课程代码"].orEmpty().contains(search, true)) &&
+                        (scoreFilter==0 || academicFailed(it.value))
                 }
                 when (sort) {
                     1 -> matching.sortedWith(compareByDescending<IndexedValue<NativeRecord>> { it.value.fields["成绩"]?.toBigDecimalOrNull() }.thenBy { it.value.title })
@@ -130,16 +137,19 @@ class AcademicActivity : ComponentActivity() {
                                 }
                                 item {
                                     TextField(query, { query = it }, label = "搜索课程名称或代码", modifier = Modifier.fillMaxWidth())
+                                    TabRow(listOf("全部成绩","需要留意"),scoreFilter,{scoreFilter=it},modifier=Modifier.padding(top=12.dp))
+                                    if(scoreFilter==1) Text("显示未通过的数值成绩与学校标注的不及格记录。",
+                                        Modifier.padding(top=8.dp),style=MaterialTheme.typography.bodySmall)
                                     Text("显示 ${visibleRecords.size} / ${termRecords.size} 条 · 点卡片查看详情", Modifier.padding(top = 8.dp),
                                         style = MaterialTheme.typography.bodySmall)
                                 }
                                 if (visibleRecords.isEmpty()) item {
                                     SettingsGroup(backdrop, config) {
                                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            Text(if (snapshot == null) "尚无已验证记录" else if (query.isNotBlank()) "没有匹配的课程" else "该学期暂无成绩")
+                                            Text(if (snapshot == null) "尚无已验证记录" else if(scoreFilter==1) "当前筛选没有需要留意的成绩" else if (query.isNotBlank()) "没有匹配的课程" else "该学期暂无成绩")
                                             Text(if (query.isNotBlank()) "试试课程名称或代码，或清空搜索条件。" else
                                                 "刷新未成功时仍保留原缓存；不会把失败当成学校没有成绩。", style = MaterialTheme.typography.bodySmall)
-                                            if (query.isNotBlank()) SettingsActionButton("清空搜索", backdrop, onClick = { query = "" })
+                                            if (query.isNotBlank()||scoreFilter!=0) SettingsActionButton("显示全部", backdrop, onClick = { query = "";scoreFilter=0 })
                                         }
                                     }
                                 }
@@ -157,7 +167,7 @@ class AcademicActivity : ComponentActivity() {
                                                         style = MaterialTheme.typography.bodySmall)
                                                 }
                                                 Text(record.fields["成绩"].orEmpty().ifBlank { "--" }, style = MaterialTheme.typography.headlineSmall,
-                                                    color = MaterialTheme.colorScheme.primary)
+                                                    color = if(academicFailed(record)) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
                                             }
                                             Text("学分 ${record.fields["学分"].orEmpty().ifBlank { "--" }} · 绩点 ${record.fields["绩点"].orEmpty().ifBlank { "--" }} · ${if (expanded) "收起详情 ▴" else "查看详情 ▾"}",
                                                 style = MaterialTheme.typography.bodyMedium)
@@ -185,10 +195,21 @@ class AcademicActivity : ComponentActivity() {
                                                     style = MaterialTheme.typography.bodySmall)
                                             }
                                             val requirement = snapshot?.requiredCredits?.toBigDecimalOrNull()
-                                            if (snapshot != null && requirement != null && requirement.signum() > 0)
+                                            if (snapshot != null && requirement != null && requirement.signum() > 0) {
+                                                val ratio=summary.confirmed.divide(requirement,4,java.math.RoundingMode.HALF_UP).toFloat().coerceIn(0f,1f)
+                                                AcademicCreditMeter(ratio)
+                                                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
+                                                    Text("已确认 ${summary.display}",style=MaterialTheme.typography.bodySmall)
+                                                    Text("要求 "+requirement.stripTrailingZeros().toPlainString(),style=MaterialTheme.typography.bodySmall)
+                                                }
                                                 Text("距离学分要求还差 ${(requirement - summary.confirmed).max(BigDecimal.ZERO).stripTrailingZeros().toPlainString()} 学分")
-                                            Text("${summary.courses} 门课程已按课程代码合并重修记录，取官方获得学分的最大值。")
-                                            if (summary.uncounted > 0) Text("${summary.uncounted} 条记录缺少课程代码或获得学分，未计入汇总。")
+                                            }
+                                            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(16.dp)) {
+                                                AcademicStat("确认课程",if(snapshot==null)"--"else summary.courses.toString(),Modifier.weight(1f))
+                                                AcademicStat("待核对记录",if(snapshot==null)"--"else summary.uncounted.toString(),Modifier.weight(1f))
+                                            }
+                                            Text("重修按课程代码合并，取学校返回的获得学分最大值。缺少必要字段的记录保留在成绩页，暂不计入所得。",
+                                                style=MaterialTheme.typography.bodySmall)
                                             Text("仅比较学校学分要求和已确认所得，不代表毕业资格审核通过。", style = MaterialTheme.typography.bodySmall)
                                         }
                                     }
@@ -197,11 +218,15 @@ class AcademicActivity : ComponentActivity() {
                                     SettingsGroup(backdrop, config) {
                                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                             Text("各学期成绩所得", fontWeight = FontWeight.Medium)
+                                            Text("点击学期查看对应课程",style=MaterialTheme.typography.bodySmall)
                                             snapshot?.terms.orEmpty().filter { term -> snapshot!!.grades.any { it.fields["学期"] == term } }.forEach { term ->
                                                 val records = snapshot!!.grades.filter { it.fields["学期"] == term }
                                                 Row(Modifier.fillMaxWidth().clickable(role = Role.Button) { selectedTerm = term; tab = 0 }
-                                                    .heightIn(min = 48.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                                                    Text(term, Modifier.weight(1f))
+                                                    .heightIn(min = 64.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                                    Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                                                        Text(term)
+                                                        Text("${records.size} 条成绩",style=MaterialTheme.typography.bodySmall)
+                                                    }
                                                     Text("${CreditSummary.from(records).display} 学分  ›")
                                                 }
                                             }
@@ -223,6 +248,21 @@ private fun AcademicStat(label: String, value: String, modifier: Modifier) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
         Text(label, style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+private fun academicFailed(record:NativeRecord):Boolean {
+    val score=record.fields["成绩"].orEmpty().trim()
+    return score.toBigDecimalOrNull()?.let{it<BigDecimal("60")} ?: (score in setOf("不及格","不合格","未通过"))
+}
+
+@Composable
+private fun AcademicCreditMeter(ratio:Float) {
+    Box(Modifier.fillMaxWidth().height(12.dp)
+        .semantics { progressBarRangeInfo=ProgressBarRangeInfo(ratio,0f..1f) }
+        .background(MaterialTheme.colorScheme.onSurface.copy(alpha=0.12f),RoundedCornerShape(6.dp))) {
+        Box(Modifier.fillMaxWidth(ratio).fillMaxHeight()
+            .background(MaterialTheme.colorScheme.primary,RoundedCornerShape(6.dp)))
     }
 }
 

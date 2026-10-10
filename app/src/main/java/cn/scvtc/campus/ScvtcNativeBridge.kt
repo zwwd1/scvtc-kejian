@@ -30,6 +30,42 @@ internal object ScvtcNativeBridge {
     internal val coordinator = Mutex()
     private var foregroundAttempt = 0L
     @Volatile var interactiveLogin = false
+    private var loginJob: Deferred<JwxtStudent>? = null
+    val loginState = kotlinx.coroutines.flow.MutableStateFlow(NativeLoginState())
+    @Synchronized
+    fun signIn(app: CourseScheduleApp, account: String, password: String): Deferred<JwxtStudent> {
+        loginJob?.takeIf { !it.isCompleted }?.let { return it }
+        require(account.matches(Regex("[0-9]{6,20}")) && password.length in 1..512) { "请输入学号和密码" }
+        loginState.value = NativeLoginState(account,busy=true,message="正在连接学校并核验学生身份…")
+        val job = app.applicationScope.async(start = CoroutineStart.LAZY) {
+            try {
+                val student = coordinator.withLock {
+                    val memory = OfficialLoginMemory(app)
+                    val api = JwxtApi(headers = { memory.apiHeaders(account,it) })
+                    CasAuthManager(app,api).signIn(account,password)
+                }
+                loginState.value = NativeLoginState(account,verified=true,message="学校身份已核验，正在后台读取课表")
+                student
+            } catch(e: CancellationException) {
+                loginState.value = NativeLoginState(account,message="已停止本次登录，原数据保留"); throw e
+            } catch(e: Exception) {
+                val extra = e is JwxtAuthenticationRequired
+                loginState.value = NativeLoginState(account,requiresVerification=extra,
+                    message=if(extra) "学校暂时需要补充认证，已填信息会保留" else "这次登录未完成，请检查网络或稍后重试；原数据保留")
+                throw e
+            }
+        }
+        loginJob = job
+        job.invokeOnCompletion { cause ->
+            synchronized(this) { if(loginJob===job) loginJob=null }
+            if(cause==null) app.applicationScope.launch {
+                val result=sync(app,account)
+                if(result.success) AcademicRepository.requestRefresh(app,account)
+            }
+        }
+        job.start()
+        return job
+    }
     const val SCHOOL = "scvtc"
     fun profileKey(account: String, term: String) = "profile:" + scvtcKey("$account|$term")
     fun fingerprint(course: CourseEntity) = scvtcKey(course.copy(id = 0).toString())
@@ -136,7 +172,9 @@ internal object ScvtcNativeBridge {
         return AutoRefreshOutcome(false, message, AutoRefreshScheduleStore.load(app))
     }
 
-    suspend fun disconnect(context: Context) = coordinator.withLock {
+    suspend fun disconnect(context: Context) {
+        synchronized(this) { loginJob?.cancel() }
+        coordinator.withLock {
         AutoRefreshScheduleStore.load(context)?.let { OfficialLoginMemory(context).forget(it.username) }
         AutoRefreshScheduleWorker.updateSchedule(context, null)
         AutoRefreshScheduleStore.clear(context)
@@ -144,6 +182,7 @@ internal object ScvtcNativeBridge {
             android.webkit.CookieManager.getInstance().removeAllCookies(null)
             android.webkit.CookieManager.getInstance().flush()
             android.webkit.WebStorage.getInstance().deleteAllData()
+        }
         }
     }
 
