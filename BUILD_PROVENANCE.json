@@ -47,7 +47,9 @@
     "sha256": "c6178db63cda7f714e90c7e3ee229fbaf4ecb1a02caf99d9bead332bf9daa094"
   },
   "expectedReleaseUrl": "https://github.com/zwwd1/scvtc-kejian/releases/tag/v1.2.1",
-  "releasePublicationStatus": "pending",
+  "releasePublicationStatus": "published",
   "cloudServicesPaused": true,
-  "report": "VERIFICATION.md"
+  "report": "VERIFICATION.md",
+  "publishedReleaseUrl": "https://github.com/zwwd1/scvtc-kejian/releases/tag/v1.2.1",
+  "releaseAssetBuildRecordSha256": "3c609ec5fd018831edd1028f3121bb0eba39d44e8bbdb72b27c2e38ce6fb459a"
 }
