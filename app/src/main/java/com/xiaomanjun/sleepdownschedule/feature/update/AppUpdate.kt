@@ -48,6 +48,7 @@ private const val GiteeOwner = "zwwd1"
 private const val GiteeRepository = "scvtc-kejian"
 private const val GiteeApiBase = "https://api.github.com"
 private const val GiteeRepositoryUrl = "https://github.com/$GiteeOwner/$GiteeRepository"
+private const val ReleaseFeedUrl = "https://raw.githubusercontent.com/$GiteeOwner/$GiteeRepository/main/releases/update.json"
 private const val ApkMimeType = "application/vnd.android.package-archive"
 private const val UpdatePreferences = "app_update_state"
 private const val LastCheckDateKey = "last_check_date"
@@ -144,7 +145,7 @@ object GiteeAppUpdater {
                 check(AppDistribution.supportsSelfUpdate) {
                     "当前应用商店发行版不支持应用内 APK 更新"
                 }
-                val releases = readReleaseObjects().map { it.toReleaseInfo() }
+                val releases = readReleaseObjects(context).map { it.toReleaseInfo() }
                 val release = selectRelease(releases, includesBeta(context))
                     ?: error("当前更新渠道暂无可用版本")
                 if (isVersionNewer(release.tagName, currentVersionName)) {
@@ -168,7 +169,7 @@ object GiteeAppUpdater {
                     it.name.lowercase() in normalizedNames
                 } ?: return@mapNotNull null
                 val sourceTag = release.string("tag_name").ifBlank { release.string("name") }
-                require(sourceTag.isNotBlank()) { "Gitee 版本缺少版本标签" }
+                require(sourceTag.isNotBlank()) { "GitHub 版本缺少版本标签" }
                 val releasePage = release.string("html_url").ifBlank {
                     "$GiteeRepositoryUrl/releases/tag/${Uri.encode(sourceTag)}"
                 }
@@ -258,7 +259,7 @@ object GiteeAppUpdater {
             val safeName = apkName
                 ?.takeIf { it.endsWith(".apk", ignoreCase = true) }
                 ?.replace(Regex("[^A-Za-z0-9._-]"), "_")
-                ?: "SleepDown-${tag.replace(Regex("[^A-Za-z0-9._-]"), "_")}.apk"
+                ?: "SCVTC-Kejian-${tag.replace(Regex("[^A-Za-z0-9._-]"), "_")}.apk"
             val target = File(updateDir, safeName)
             downloadToFile(url, target, onProgress)
             require(target.length() > 0L) { "下载到的安装包为空" }
@@ -323,7 +324,7 @@ object GiteeAppUpdater {
 
     private fun JsonObject.toReleaseInfo(): GiteeReleaseInfo {
         val tag = string("tag_name").ifBlank { string("name") }
-        require(tag.isNotBlank()) { "Gitee Release 缺少版本标签" }
+        require(tag.isNotBlank()) { "GitHub Release 缺少版本标签" }
         val asset = releaseAssets().firstOrNull(ReleaseAsset::isAppUpdateApk)
         val releasePage = string("html_url").ifBlank {
             "$GiteeRepositoryUrl/releases/tag/${Uri.encode(tag)}"
@@ -339,18 +340,40 @@ object GiteeAppUpdater {
         )
     }
 
-    private fun readReleaseObjects(): List<JsonObject> {
+    private fun readReleaseObjects(context: Context? = null): List<JsonObject> {
+        // Public release metadata is served as a static file, without the unauthenticated API limit.
+        val prefs = context?.let(::preferences)
+        val cached = prefs?.getString("release_feed", null)
+        val connection = openConnection(ReleaseFeedUrl)
+        if (cached != null) prefs?.getString("release_feed_etag", null)?.let { connection.setRequestProperty("If-None-Match", it) }
+        try {
+            val code = connection.responseCode
+            if (code == HttpURLConnection.HTTP_NOT_MODIFIED && cached != null)
+                return parseReleaseFeed(cached)
+            if (code in 200..299) {
+                val body = connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                val entries = parseReleaseFeed(body)
+                prefs?.edit { putString("release_feed", body); putString("release_feed_etag", connection.getHeaderField("ETag")) }
+                return entries
+            }
+            if (code != HttpURLConnection.HTTP_NOT_FOUND) error("GitHub 更新清单暂不可用（HTTP $code），可稍后重试或打开项目发布页")
+        } finally { connection.disconnect() }
+        // Compatibility for repositories whose first static feed has not been published yet.
         val releases = mutableListOf<JsonObject>()
         var page = 1
         do {
             val endpoint = "$GiteeApiBase/repos/$GiteeOwner/$GiteeRepository/releases?page=$page&per_page=100"
             val entries = json.parseToJsonElement(readText(endpoint)) as? JsonArray
-                ?: error("Gitee 返回了无法识别的版本列表")
+                ?: error("GitHub 返回了无法识别的版本列表")
             releases += entries.map { it.jsonObjectOrThrow() }
             page++
-        } while (entries.size == 100)
+        } while (entries.size == 100 && page <= 3)
         return releases
     }
+
+    private fun parseReleaseFeed(text: String): List<JsonObject> =
+        (json.parseToJsonElement(text) as? JsonArray)?.map { it.jsonObjectOrThrow() }
+            ?: error("GitHub 更新清单格式不正确")
 
     private fun JsonObject.releaseAssets(): List<ReleaseAsset> {
         val containers = listOfNotNull(this["assets"], this["attach_files"])
@@ -412,15 +435,16 @@ object GiteeAppUpdater {
         readTimeout = readTimeoutMillis
         requestMethod = "GET"
         setRequestProperty("Accept", "application/json, application/octet-stream")
-        setRequestProperty("User-Agent", "SleepDown-Schedule/${BuildConfig.VERSION_NAME}")
+        setRequestProperty("User-Agent", "SCVTC-Kejian/${BuildConfig.VERSION_NAME}")
     }
 
     private inline fun <T> HttpURLConnection.useResponse(block: (java.io.InputStream) -> T): T {
         try {
             val status = responseCode
             if (status !in 200..299) {
-                val detail = errorStream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
-                throw IllegalStateException("Gitee 请求失败（$status）${detail.take(160)}")
+                val message = if (status == 403 || status == 429) "GitHub 接口暂时限流，请稍后重试或打开项目发布页"
+                    else "GitHub 请求失败（HTTP $status），请检查网络后重试"
+                throw IllegalStateException(message)
             }
             return inputStream.use(block)
         } finally {
@@ -696,4 +720,4 @@ private fun JsonObject.string(key: String): String =
     (this[key] as? JsonPrimitive)?.contentOrNull.orEmpty()
 
 private fun JsonElement.jsonObjectOrThrow(): JsonObject =
-    this as? JsonObject ?: error("Gitee 返回了无法识别的数据")
+    this as? JsonObject ?: error("GitHub 返回了无法识别的数据")

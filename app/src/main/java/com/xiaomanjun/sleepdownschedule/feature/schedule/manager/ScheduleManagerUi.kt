@@ -616,7 +616,7 @@ internal fun shareScheduleIcs(context: Context, scheduleName: String, file: java
         type = "text/calendar"
         putExtra(Intent.EXTRA_SUBJECT, "$scheduleName - SleepDown 课表")
         putExtra(Intent.EXTRA_STREAM, uri)
-        clipData = ClipData.newRawUri("SleepDown ICS 课表", uri)
+        clipData = ClipData.newRawUri("川职课间 ICS 课表", uri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
     context.startActivity(Intent.createChooser(intent, "分享或保存 ICS 课表"))

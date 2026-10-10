@@ -53,7 +53,7 @@ object NotificationScheduler {
     private const val KEY_DND_ENABLED_BY_APP = "dnd_enabled_by_app"
     private const val KEY_DND_RULE_ID = "dnd_rule_id"
     private const val KEY_DND_RULE_MIGRATED = "dnd_rule_migrated"
-    private const val DND_RULE_NAME = "SleepDown 课程勿扰"
+    private const val DND_RULE_NAME = "川职课间课程勿扰"
     private const val LIVE_UPDATE_ID = 20260522
     private const val LIVE_UPDATE_ALTERNATE_ID = 20260523
     private const val SUPER_ISLAND_ID = 20260524
@@ -1064,6 +1064,7 @@ object NotificationScheduler {
     private fun dndConditionId(context: Context): Uri =
         Condition.newId(context).appendPath("live-update-button").build()
 
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     private fun setApplicationDndRuleState(
         context: Context,
         manager: NotificationManager,
@@ -1117,8 +1118,8 @@ object NotificationScheduler {
                 "",
                 R.drawable.ic_moon_light,
                 if (enabled) Condition.STATE_TRUE else Condition.STATE_FALSE,
-                Condition.FLAG_RELEVANT_NOW,
-                Condition.SOURCE_USER_ACTION
+                Condition.SOURCE_USER_ACTION,
+                Condition.FLAG_RELEVANT_NOW
             )
         )
     }

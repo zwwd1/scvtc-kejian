@@ -62,7 +62,7 @@ class JwxtApi(private val client:OkHttpClient=OkHttpClient.Builder()
         val cancellation=currentCoroutineContext().job.invokeOnCompletion { if(it is CancellationException)call.cancel() }
         try { call.execute().use { response ->
             if(response.code in setOf(401,403) || response.code in 300..399)throw JwxtAuthenticationRequired()
-                        val text=response.body?.byteStream()?.use { input ->
+            val text=response.body?.byteStream()?.use { input ->
                 val output=java.io.ByteArrayOutputStream();val block=ByteArray(8192)
                 while(true){currentCoroutineContext().ensureActive();val count=input.read(block);if(count<0)break;check(output.size()+count<=3_000_000){"教务响应超过读取上限"};output.write(block,0,count)}
                 output.toString("UTF-8")

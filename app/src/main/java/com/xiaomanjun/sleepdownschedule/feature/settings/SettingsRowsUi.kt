@@ -290,7 +290,7 @@ fun SettingsDefaultWallpaperRow(
     val options = DefaultWallpaperStyle.entries
     SleepDownLiquidDropdownPreference(
         items = options.map { style ->
-            if (style == DefaultWallpaperStyle.KANBAN) "看板娘" else "无"
+            if (style == DefaultWallpaperStyle.KANBAN) "川职月光" else "无"
         },
         selectedIndex = options.indexOf(selected).coerceAtLeast(0),
         title = "默认壁纸",
@@ -1352,7 +1352,7 @@ private val changelogReleaseDates = mapOf(
     "1.2.3" to "2026-09-01",
     "1.2.2" to "2026-08-29",
     "1.2.1" to "2026-08-28",
-    "1.2.0" to "2026-08-19",
+    "1.2.0" to "2026-10-10",
     "1.1.5" to "2026-08-11",
     "1.1.4" to "2026-08-08",
     "1.1.3" to "2026-08-08",

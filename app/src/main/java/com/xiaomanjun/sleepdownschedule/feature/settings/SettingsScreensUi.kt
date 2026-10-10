@@ -245,7 +245,7 @@ fun GeneralSettingsScreen(
                     SettingsDivider()
                     SettingsToggleRow(
                         title = "自动检查更新",
-                        subtitle = "每天首次打开应用时检查 Gitee 上的新版本。",
+                        subtitle = "每天首次打开应用时检查川职课间 GitHub 发布的新版本。",
                         checked = draft.autoCheckUpdates,
                         backdrop = backdrop,
                         onCheckedChange = { applyChange(draft.copy(autoCheckUpdates = it)) }

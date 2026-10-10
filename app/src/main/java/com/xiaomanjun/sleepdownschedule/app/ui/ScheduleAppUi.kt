@@ -1178,7 +1178,7 @@ fun CourseScheduleAppUi(
         providerId = "home-centered-dialog-scene"
     )
     val chromeBackdrop = rememberGlassCombinedBackdrop(backgroundBackdrop, contentBackdrop)
-    remember(glassSceneState) {
+    DisposableEffect(glassSceneState) {
         glassSceneState.requireValidTopology(
             nodes = listOf(
                 GlassTopologyNode("home-background", GlassBackdropDomain.Background, GlassTopologyNodeRole.Producer),
@@ -1201,6 +1201,7 @@ fun CourseScheduleAppUi(
                 GlassSamplingLink("home-cached-week", "home-personalization")
             )
         )
+        onDispose { }
     }
     var homeReadabilityRootSize by remember { mutableStateOf(IntSize.Zero) }
     var homeRootPositionOnScreen by remember { mutableStateOf(Offset.Zero) }
@@ -3771,7 +3772,7 @@ fun CourseScheduleAppUi(
     if (showManagedFreeAiOffer) {
         LiquidAlertDialog(
             title = "启用每日免费 AI？",
-            message = "SleepDown 为尚未配置模型服务的用户提供每日免费 AI 额度，可用于AI助理、AI 对话和 AI 教务导入。固定使用 gpt-5.6-luna 与 Responses 接口，可随时在 AI 设置中切换或关闭。",
+            message = "AI 助理、对话与导入使用你配置的模型服务，密钥加密保存在本机。川职课间的云服务已暂停。",
             actions = listOf(
                 LiquidAlertAction("暂不启用", LiquidAlertActionStyle.Secondary) {
                     AiImportSettingsStore.declineManagedFreeAi(context)
@@ -7716,9 +7717,9 @@ private fun SliderWithSnapMarker(
     content: @Composable () -> Unit
 ) {
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
-    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+    Box(modifier = modifier.fillMaxWidth()) {
         content()
-        val snap = snapValue ?: return@BoxWithConstraints
+        val snap = snapValue ?: return@Box
         val fraction = ((snap - valueRange.start) /
             (valueRange.endInclusive - valueRange.start)).coerceIn(0f, 1f)
         Canvas(
@@ -8217,7 +8218,7 @@ fun SettingsRootScreen(
     val appName = remember {
         runCatching {
             context.packageManager.getApplicationLabel(context.applicationInfo).toString()
-        }.getOrDefault("SleepDown课程表")
+        }.getOrDefault("川职课间")
     }
 
     val updateAvailable by GiteeAppUpdater.updateAvailable.collectAsStateWithLifecycle()
@@ -8486,7 +8487,7 @@ private fun SettingsUpdateDialogHost(
         null -> Unit
         SettingsUpdateDialog.Checking -> LiquidAlertDialog(
             title = "正在检查更新",
-            message = "正在读取 Gitee 上最新的 SleepDown-Schedule Release。",
+            message = "正在读取川职课间 GitHub 发布的更新清单。",
             actions = listOf(LiquidAlertAction("取消", LiquidAlertActionStyle.Secondary, onClick = onDismiss)),
             backdrop = backdrop,
             config = config,
@@ -8497,7 +8498,7 @@ private fun SettingsUpdateDialogHost(
             val notes = release.notes.trim().ifBlank { "该版本没有填写更新说明。" }
             LiquidAlertDialog(
                 title = "发现新版本 ${release.name}",
-                message = "$notes\n\n当前将从 Gitee 下载 APK，安装前仍会由系统向你确认。",
+                message = "$notes\n\n当前将从川职课间 GitHub 发布下载 APK，安装前仍会由系统向你确认。",
                 actions = listOf(
                     LiquidAlertAction("稍后", LiquidAlertActionStyle.Secondary, onClick = onDismiss),
                     LiquidAlertAction("下载并安装", LiquidAlertActionStyle.Primary) { onDownload(release) }
@@ -8509,7 +8510,7 @@ private fun SettingsUpdateDialogHost(
         }
         is SettingsUpdateDialog.UpToDate -> LiquidAlertDialog(
             title = "已是最新版本",
-            message = "当前安装版本已不低于 Gitee 最新 Release（${dialog.latestTag}）。",
+            message = "当前安装版本已不低于川职·课间 GitHub 最新 Release（${dialog.latestTag}）。",
             actions = listOf(LiquidAlertAction("知道了", LiquidAlertActionStyle.Primary, onClick = onDismiss)),
             backdrop = backdrop,
             config = config,
@@ -8517,7 +8518,7 @@ private fun SettingsUpdateDialogHost(
         )
         is SettingsUpdateDialog.Downloading -> LiquidAlertDialog(
             title = "正在下载 ${dialog.release.name}",
-            message = "正在从 Gitee 下载 APK。现在可以返回或退到桌面，下载会在后台继续，并通过实时活动显示进度。",
+            message = "正在从川职·课间 GitHub 下载 APK。现在可以返回或退到桌面，下载会在后台继续，并通过实时活动显示进度。",
             actions = listOf(
                 LiquidAlertAction(
                     "后台下载",
@@ -8553,7 +8554,7 @@ private fun SettingsUpdateDialogHost(
         )
         SettingsUpdateDialog.InstallPermissionRequired -> LiquidAlertDialog(
             title = "允许安装更新",
-            message = "Android 需要你先允许 SleepDown 安装来自 Gitee 的更新。授权返回后会继续打开系统安装确认页面。",
+            message = "Android 需要你先允许川职·课间安装来自本项目 GitHub 的更新。授权返回后会继续打开系统安装确认页面。",
             actions = listOf(
                 LiquidAlertAction("取消", LiquidAlertActionStyle.Secondary, onClick = onDismiss),
                 LiquidAlertAction("去授权", LiquidAlertActionStyle.Primary, onClick = onRequestInstallPermission)
@@ -8775,7 +8776,7 @@ fun AboutSettingsScreen(state: AppState, backdrop: Backdrop?) {
                     )
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
-                            text = "SleepDown 课程表",
+                            text = "川职课间",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -9331,8 +9332,8 @@ fun ChangelogSettingsScreen(
             item(key = "about-project") {
                 AboutGlassPanel(darkTheme = darkTheme, modifier = Modifier.fillMaxWidth()) {
                     SettingsValueRow("项目维护", "zwwd1")
-                    SettingsInfoRow("致谢项目 · SleepDown课程表", "本项目基于 SleepDown课程表 v1.2.6 修改；原作者：xiaomanjun233。非官方川职适配分支。")
-                    SettingsNavigationRow("SleepDown 原项目", "github.com/xiaomanjun233/SleepDown-Schedule", onClick = { openProjectPage("https://github.com/xiaomanjun233/SleepDown-Schedule") })
+                    SettingsInfoRow("致谢项目", "SleepDown课程表、Miuix 与 Backdrop。原项目许可和版权声明保留于仓库，川职课间由 zwwd1 维护。")
+                    SettingsNavigationRow("川职课间开源项目", "github.com/zwwd1/scvtc-kejian", onClick = { openProjectPage("https://github.com/zwwd1/scvtc-kejian") })
                     SettingsDivider()
                     Row(
                         modifier = Modifier
@@ -9445,6 +9446,7 @@ fun ChangelogSettingsScreen(
                 // One continuous panel. Canvas clipping avoids a texture as tall as all expanded
                 // versions; each details animation still owns only its own small graphics layer.
                 AboutGlassPanel(darkTheme, Modifier.fillMaxWidth(), longContent = true) {
+            changelogItem("1.2.0", "修复检查更新失败，优先读取本项目 GitHub 更新清单。使用原创川职月光壁纸与校园助手小澄，提供五种待机和互动状态。统一项目名称与反馈渠道，保留原有 Miuix 双入口底栏、液态玻璃和完整动效。保留账号、课表、本地编辑与自定义壁纸，云服务继续暂停。")
             changelogItem("1.1.0", "新增真实成绩与学分查询、学期筛选和本机加密缓存。修正重复导入引起的误报冲突，调整课程前先确认，并保留单周编辑。新增右上角液态玻璃刷新与同步状态。更新二次元头像图标和小澄多状态互动，使用新的赞赏原图。保留 SleepDown 双入口底栏和原有动效，云服务继续暂停。")
             changelogItem("1.0.0 · 第一版", "以 SleepDown 1.2.6 完整源码重建川职课表应用，保留 Miuix 组件、玻璃双入口底栏、课程编辑与切周动效。接入本校 CAS 认证和原生课表接口，保存本机加密凭据并恢复过期会话。覆盖升级迁移原课表，保留离线课程与本地编辑。云同步和统计暂停。")
                 }
@@ -9461,6 +9463,9 @@ private fun Context.resolveSleepDownCustomTabsPackage(): String? {
     ) ?: CustomTabsClient.getPackageName(this, emptyList())
 }
 
+// AndroidX Browser's rounded-corners parameter uses the decoration IntDef by mistake;
+// ACTIVITY_SIDE_SHEET_ROUNDED_CORNERS_POSITION_TOP is the documented constant.
+@android.annotation.SuppressLint("WrongConstant")
 private fun Context.openSleepDownCustomTab(
     url: String,
     providerPackage: String?,

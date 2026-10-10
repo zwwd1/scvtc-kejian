@@ -19,7 +19,7 @@ val releaseStorePassword = releaseSecret("sleepdown.releaseStorePassword", "SLEE
 val releaseKeyAlias = releaseSecret("sleepdown.releaseKeyAlias", "SLEEPDOWN_RELEASE_KEY_ALIAS")
 val releaseKeyPassword = releaseSecret("sleepdown.releaseKeyPassword", "SLEEPDOWN_RELEASE_KEY_PASSWORD")
 val remoteConfigSecret = releaseSecret("sleepdown.remoteConfigSecret", "SLEEPDOWN_REMOTE_CONFIG_SECRET").orEmpty()
-val sleepDownVersionName = "1.1.0"
+val sleepDownVersionName = "1.2.0"
 val donationInput=providers.environmentVariable("SCVTC_DONATION_PNG").orNull
 val donationAssets=layout.buildDirectory.dir("generated/campus-donation")
 val stageCampusDonation=tasks.register("stageCampusDonation") {
@@ -78,7 +78,7 @@ android {
         applicationId = "cn.scvtc.campus.preview"
         minSdk = 33
         targetSdk = 36
-        versionCode = 12
+        versionCode = 13
         versionName = sleepDownVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "SLEEPDOWN_API_BASE_URL", "\"https://api.sleepdownschedule.cn\"")
